@@ -10,8 +10,8 @@ export default function GamesHome() {
   const { t } = useI18n();
   const games = [
     { id: "math-blitz", title: t.games.titles.mathBlitz(), href: "/student/games/math-blitz", emoji: "🔢" },
-    { id: "science-quest", title: t.games.titles.scienceQuest(), href: "/student/games/science-quest", emoji: "🔬" },
     { id: "stem-quiz", title: t.games.titles.stemQuiz ? t.games.titles.stemQuiz() : t.games.titles.scienceQuest(), href: "/student/games/stem-quiz", emoji: "🧪" },
+    { id: "big-o-runner", title: "Big O Runner", href: "/games/big-o-runner", emoji: "🏃‍♂️" },
   ];
   return (
     <div className="min-h-screen p-4 md:p-8">

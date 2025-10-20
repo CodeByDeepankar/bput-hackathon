@@ -3,8 +3,6 @@ import Link from "next/link";
 import { useEffect } from "react";
 import ScienceQuestGame from "@/components/phaser/ScienceQuestGame";
 
-export const metadata = { title: "🔬 Science Quest" };
-
 export default function ScienceQuestStudent() {
   useEffect(() => {
     const assets = [
