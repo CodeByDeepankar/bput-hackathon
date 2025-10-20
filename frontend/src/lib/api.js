@@ -1,5 +1,8 @@
 // API client for the learning dashboard
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.trim();
+const API_BASE_URL = (RAW_API_BASE_URL && RAW_API_BASE_URL.length
+  ? RAW_API_BASE_URL.replace(/\/$/, '')
+  : '/api');
 
 class ApiClient {
   constructor() {
@@ -7,7 +10,7 @@ class ApiClient {
   }
 
   async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`;
+  const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -47,9 +50,9 @@ class ApiClient {
     } catch (error) {
       console.error(`API request failed: ${endpoint}`, error);
       
-      // Handle network errors (backend not running)
+      // Handle network errors (API not reachable)
       if (error.message === 'Failed to fetch' || error.message.includes('fetch') || error.code === 'ECONNREFUSED') {
-        throw new Error('Backend server is not running. Please start the backend server at http://localhost:4000');
+        throw new Error('API is not reachable. Ensure the Next.js server is running and exposes its /api routes.');
       }
       
       // Handle timeout errors

@@ -1,5 +1,8 @@
 // API client for the learning dashboard
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.trim();
+const API_BASE_URL = (RAW_API_BASE_URL && RAW_API_BASE_URL.length
+  ? RAW_API_BASE_URL.replace(/\/$/, '')
+  : '/api');
 
 class ApiClient {
   constructor() {

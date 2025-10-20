@@ -46,12 +46,12 @@ const ConnectionStatus = () => {
         
         {status === 'disconnected' && (
           <div>
-            <div className="font-semibold mb-1">❌ Backend Connection Failed</div>
+            <div className="font-semibold mb-1">❌ API Connection Failed</div>
             <div className="text-sm opacity-90">
-              {error || 'Unable to connect to backend server'}
+              {error || 'Unable to reach the application API'}
             </div>
             <div className="text-xs mt-2 opacity-75">
-              Make sure the backend server is running at http://localhost:4000
+              Ensure the Next.js dev server is running (default http://localhost:3000) and exposes its /api routes.
             </div>
           </div>
         )}

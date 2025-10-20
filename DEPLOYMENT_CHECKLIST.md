@@ -4,19 +4,19 @@
 
 ### 1. System Requirements
 - [ ] Node.js v18+ installed
-- [ ] CouchDB v3.0+ installed and running
+- [ ] Supabase project created and accessible
 - [ ] Git installed
 - [ ] Terminal/Command prompt access
 
-### 2. CouchDB Setup
-- [ ] CouchDB service is running
-- [ ] Admin panel accessible at http://localhost:5984/_utils
-- [ ] Admin user created (default: admin/password)
-- [ ] Database server responding to requests
+### 2. Supabase Setup
+- [ ] Project URL copied (Settings → API)
+- [ ] Service Role key copied (Settings → API)
+- [ ] (Optional) anon key stored for frontend use
+- [ ] Required tables created via Supabase SQL editor
 
 ### 3. Environment Configuration
 - [ ] Copied `backend/.env.example` to `backend/.env`
-- [ ] Updated CouchDB credentials in `.env` file
+- [ ] Added Supabase credentials to `.env`
 - [ ] Copied `frontend/.env.local.example` to `frontend/.env.local`
 - [ ] Verified API URL in frontend environment
 
@@ -27,7 +27,7 @@
 ### 5. Database Initialization
 - [ ] Backend server started successfully
 - [ ] Health check passes: http://localhost:4000/health
-- [ ] Database views created: http://localhost:4000/setup-views
+- [ ] Supabase query succeeds (e.g., verify tables via Supabase dashboard)
 
 ### 6. Application Testing
 - [ ] Frontend loads: http://localhost:3000
@@ -44,8 +44,8 @@
 
 **Solutions**:
 1. Check if backend server is running on port 4000
-2. Verify COUCHDB_URL in backend/.env
-3. Ensure CouchDB is accessible
+2. Verify Supabase credentials are present in backend/.env
+3. Confirm Supabase project is reachable via https://status.supabase.com
 4. Check firewall/antivirus blocking connections
 
 **Debug Steps**:
@@ -53,33 +53,19 @@
 # Test backend health
 curl http://localhost:4000/health
 
-# Check CouchDB
-curl http://localhost:5984
-
 # Verify environment variables
 cd backend && npm run env-check
 ```
 
 ### ❌ Database Connection Failed
 
-**Problem**: Server logs show CouchDB connection errors
+**Problem**: Server logs show Supabase errors (401/404/permission denied)
 
 **Solutions**:
-1. Start CouchDB service
-2. Verify credentials in `.env` file
-3. Check CouchDB is listening on correct port
-4. Test database connection manually
-
-**Debug Steps**:
-```bash
-# Test CouchDB connection
-curl http://admin:password@localhost:5984/_all_dbs
-
-# Check CouchDB logs
-# Windows: Check Event Viewer
-# Linux: sudo journalctl -u couchdb
-# macOS: Check Console.app
-```
+1. Regenerate the Service Role key and update `.env`
+2. Verify table names match expectations in Supabase
+3. Inspect Row Level Security policies for the affected tables
+4. Review Supabase project logs (Dashboard → Logs)
 
 ### ❌ CORS Errors
 
@@ -90,23 +76,24 @@ curl http://admin:password@localhost:5984/_all_dbs
 2. Check CORS configuration in server.js
 3. Ensure both servers are running
 
-### ❌ Database Views Missing
+### ❌ Data Missing in Dashboard
 
 **Problem**: Student progress shows no data
 
 **Solutions**:
-1. Visit http://localhost:4000/setup-views
-2. Check CouchDB admin panel for design documents
-3. Restart backend server
+1. Open the Supabase dashboard and inspect the `student_progress` and `quiz_responses` tables
+2. Confirm backend logs show successful insert operations
+3. Verify Supabase Row Level Security policies allow the service role to read/write
 
 ## 🛠️ Environment Configuration Templates
 
 ### Backend `.env` File
 ```env
 # Database Configuration
-COUCHDB_URL=http://127.0.0.1:5984
-COUCHDB_USERNAME=admin
-COUCHDB_PASSWORD=password
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+# Optional anon key if re-used in API routes
+# SUPABASE_ANON_KEY=your-anon-key
 
 # Server Configuration
 PORT=4000
@@ -127,15 +114,10 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 If you have Docker installed:
 
 ```bash
-# Start CouchDB in Docker
-docker run -d --name couchdb \
-  -p 5984:5984 \
-  -e COUCHDB_USER=admin \
-  -e COUCHDB_PASSWORD=password \
-  apache/couchdb:3.3
+# Start backend container (example)
+docker-compose up -d backend frontend
 
-# Verify CouchDB is running
-docker logs couchdb
+# Supabase remains a managed service (no local container needed)
 ```
 
 ## 🌐 Production Deployment Notes
@@ -143,14 +125,15 @@ docker logs couchdb
 ### Environment Variables for Production
 ```env
 NODE_ENV=production
-COUCHDB_URL=https://your-couchdb-server.com
-COUCHDB_USERNAME=your-username
-COUCHDB_PASSWORD=your-secure-password
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
+# Optional anon key if required by your deployment
+# SUPABASE_ANON_KEY=your-anon-key
 FRONTEND_URL=https://your-domain.com
 ```
 
 ### Security Checklist
-- [ ] Change default CouchDB admin password
+- [ ] Rotate Supabase service role key regularly
 - [ ] Use HTTPS in production
 - [ ] Configure proper CORS origins
 - [ ] Enable rate limiting
@@ -164,7 +147,7 @@ If you're still having issues:
 2. **Health Check**: Visit http://localhost:4000/health
 3. **Network Tab**: Check browser's Network tab for failed requests
 4. **Environment**: Verify all environment variables are set correctly
-5. **Ports**: Ensure ports 3000, 4000, and 5984 are available
+5. **Ports**: Ensure ports 3000 and 4000 are available
 
 ## 📱 Testing the Application
 
@@ -176,7 +159,7 @@ Once everything is running:
 4. **Test Features**:
    - Teacher: Create subjects, add quizzes
    - Student: Take quizzes, view progress
-5. **Check Progress**: Verify data syncs to CouchDB
+5. **Check Progress**: Verify data appears in Supabase tables
 
 ## 🔄 Updates and Maintenance
 
@@ -188,4 +171,4 @@ cd ../frontend && npm install
 # Restart both servers
 ```
 
-Remember to backup your CouchDB data before major updates!
+Remember to schedule Supabase backups before major updates!

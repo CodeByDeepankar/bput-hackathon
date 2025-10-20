@@ -5,107 +5,122 @@
 This is a comprehensive learning management system built with modern technologies:
 
 ### Backend Stack
-- **Node.js + Express** - REST API server
-- **CouchDB** - NoSQL database with offline sync capabilities
-- **Nano** - CouchDB client for Node.js
+- **Next.js API Route Handlers (Node.js)** - REST API served from `frontend/src/app/api`
+- **Supabase (PostgreSQL)** - Managed relational database
+- **@supabase/supabase-js** - Supabase client for server-side access
 
 ### Frontend Stack  
 - **Next.js 15** - React framework with App Router
 - **Tailwind CSS** - Utility-first CSS framework
 - **Clerk** - Authentication and user management
-- **PouchDB** - Client-side database for offline support
+- **Custom API client** - Communicates with the Supabase-backed REST API
+
+> ℹ️ The legacy `backend/server.js` Express server has been fully migrated into Next.js API route handlers under `frontend/src/app/api`. All endpoints referenced below map to files within that directory structure.
 
 ### Database Schema
 
-#### Core Entities
+Supabase stores application data in relational tables. Key structures include:
 
-**Subjects Collection (`subjects`)**
-```json
-{
-  "_id": "subject:timestamp:name",
-  "name": "Mathematics",
-  "class": "10",
-  "description": "Algebra and Geometry",
-  "createdBy": "user_id",
-  "createdAt": "2025-01-01T00:00:00Z",
-  "updatedAt": "2025-01-01T00:00:00Z",
-  "type": "subject"
-}
-```
+#### `subjects`
+| column | type | notes |
+| --- | --- | --- |
+| id | text | primary key generated via `subject:<slug>` |
+| name | text | subject display name |
+| class | text | grade or class identifier |
+| description | text | optional summary |
+| created_by | text | Clerk user id of creator |
+| school_id | text | optional school/group reference |
+| created_at | timestamptz | defaults to `now()` |
+| updated_at | timestamptz | maintained by backend on updates |
 
-**Quizzes Collection (`quizzes`)**
-```json
-{
-  "_id": "quiz:timestamp:title",
-  "subjectId": "subject:123:math",
-  "title": "Chapter 1 Quiz",
-  "description": "Basic algebra concepts",
-  "difficulty": "medium",
-  "timeLimit": 300,
-  "createdBy": "user_id",
-  "createdAt": "2025-01-01T00:00:00Z",
-  "type": "quiz"
-}
-```
+#### `quizzes`
+| column | type | notes |
+| --- | --- | --- |
+| id | text | primary key generated via `quiz:<slug>` |
+| subject_id | text | foreign key → `subjects.id` |
+| title | text | quiz title |
+| description | text | optional overview |
+| difficulty | text | enum-like string (`easy`, `medium`, `hard`) |
+| time_limit | integer | time limit in seconds |
+| created_by | text | creator user id |
+| school_id | text | optional school/group reference |
+| created_at | timestamptz | creation timestamp |
+| updated_at | timestamptz | last modification timestamp |
 
-**Questions Collection (`questions`)**
-```json
-{
-  "_id": "question:quiz_id:1",
-  "quizId": "quiz:123:chapter1",
-  "text": "What is 2 + 2?",
-  "options": ["3", "4", "5", "6"],
-  "correctAnswer": "4",
-  "explanation": "Basic addition",
-  "order": 1,
-  "type": "question"
-}
-```
+#### `questions`
+| column | type | notes |
+| --- | --- | --- |
+| id | text | primary key (`<quizId>:question:<n>`) |
+| quiz_id | text | foreign key → `quizzes.id` |
+| text | text | question prompt |
+| options | jsonb | array of answer options |
+| correct_answer | text | correct option identifier |
+| explanation | text | optional rationale |
+| order | integer | display order |
+| created_at | timestamptz | insertion timestamp |
 
-**Responses Collection (`responses`)**
-```json
-{
-  "_id": "response:student_id:quiz_id:timestamp",
-  "quizId": "quiz:123:chapter1",
-  "studentId": "user_123",
-  "answers": {
-    "question:quiz:123:1": "4",
-    "question:quiz:123:2": "option2"
-  },
-  "score": 85.5,
-  "correctAnswers": 17,
-  "totalQuestions": 20,
-  "timeSpent": 180,
-  "submittedAt": "2025-01-01T00:00:00Z",
-  "type": "quiz_response"
-}
-```
+#### `quiz_responses`
+| column | type | notes |
+| --- | --- | --- |
+| id | text | primary key (`response:<studentId>:<quizId>`) |
+| quiz_id | text | quiz reference |
+| student_id | text | Clerk user id |
+| answers | jsonb | map of question ids to answers |
+| score | numeric | percentage score (0-100) |
+| correct_answers | integer | number of correct responses |
+| total_questions | integer | number of questions attempted |
+| time_spent | integer | seconds spent on quiz |
+| submitted_at | timestamptz | submission timestamp |
 
-**Streaks Collection (`streaks`)**
-```json
-{
-  "_id": "streak:user_id",
-  "userId": "user_123",
-  "currentStreak": 7,
-  "lastCompletionDate": "2025-01-01",
-  "updatedAt": "2025-01-01T00:00:00Z",
-  "type": "streak_record"
-}
-```
+#### `quiz_completions`
+| column | type | notes |
+| --- | --- | --- |
+| id | text | primary key (`completion:<userId>:<quizId>`) |
+| user_id | text | student identifier |
+| quiz_id | text | quiz reference |
+| score | numeric | completion score |
+| time_spent | integer | seconds spent |
+| subject | text | denormalised subject id |
+| completed_at | timestamptz | completion timestamp |
 
-**Quiz Completions Collection (`quiz_completions`)**
-```json
-{
-  "_id": "completion:user_id:quiz_id:timestamp",
-  "userId": "user_123",
-  "quizId": "quiz:123:chapter1",
-  "score": 85.5,
-  "timeSpent": 180,
-  "subject": "subject:123:math",
-  "completedAt": "2025-01-01T00:00:00Z",
-  "type": "quiz_completion"
-}
-```
+#### `streaks`
+| column | type | notes |
+| --- | --- | --- |
+| user_id | text | primary key |
+| current_streak | integer | number of consecutive active days |
+| last_completion_date | date | ISO date of last completion |
+| updated_at | timestamptz | updated by backend when streak recalculates |
+
+#### `student_progress`
+| column | type | notes |
+| --- | --- | --- |
+| id | text | primary key (`progress:<studentId>`) |
+| payload | jsonb | legacy progress payload retained for compatibility |
+| created_at | timestamptz | timestamp of insertion |
+
+#### `user_roles`
+| column | type | notes |
+| --- | --- | --- |
+| user_id | text | primary key (Clerk user id) |
+| role | text | `teacher`, `student`, or `unassigned` |
+| name | text | display name |
+| class | text | optional class/grade |
+| school_id | text | optional school reference |
+| provisional | boolean | `true` when auto-provisioned |
+| created_at | timestamptz | creation timestamp |
+| updated_at | timestamptz | last update timestamp |
+
+#### `achievements`
+| column | type | notes |
+| --- | --- | --- |
+| id | text | primary key (`ach:<userId>:<key>`) |
+| user_id | text | student identifier |
+| key | text | unique achievement key |
+| title | text | user-facing label |
+| description | text | optional description |
+| icon | text | optional icon path |
+| awarded_at | timestamptz | when achievement was granted |
+| meta | jsonb | arbitrary metadata (e.g., thresholds) |
 
 ## Backend API Endpoints
 
@@ -189,7 +204,7 @@ This is a comprehensive learning management system built with modern technologie
 
 ### Prerequisites
 - Node.js 18+ 
-- CouchDB 3.x
+- Supabase project credentials (Project URL + Service Role key)
 - Git
 
 ### 1. Clone and Setup Backend
@@ -204,21 +219,27 @@ cd backend
 npm install
 
 # Create .env file
-echo "COUCHDB_URL=http://deep:1234@127.0.0.1:5984" > .env
+cat > .env << EOF
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+# Optional anon key if you surface Supabase directly via backend routes
+# SUPABASE_ANON_KEY=your-anon-key
+PORT=4000
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
+EOF
 
 # Start backend server
 npm start
 # Server will run on http://localhost:4000
 ```
 
-### 2. Setup CouchDB
+### 2. Configure Supabase
 
-Install CouchDB and create admin user:
-- URL: http://127.0.0.1:5984
-- Username: `deep`
-- Password: `1234`
-
-Required databases will be created automatically by the backend.
+1. Sign in to Supabase and create a project
+2. Navigate to **Project Settings → API** to copy the Project URL and Service Role key
+3. Use the SQL editor to create tables matching the schema documented above
+4. (Optional) Load seed data using Supabase's SQL editor or CSV import
 
 ### 3. Setup Frontend
 
@@ -241,12 +262,10 @@ npm run dev
 # Frontend will run on http://localhost:3000
 ```
 
-### 4. Initialize Database Views
+### 4. Verify Connectivity
 
-```bash
-# Create CouchDB views for efficient querying
-curl -X POST http://localhost:4000/setup-views
-```
+- Hit `http://localhost:4000/health` to confirm the backend can reach Supabase
+- Use the Supabase dashboard to confirm new rows appear when creating subjects/quizzes
 
 ## Usage Guide
 
@@ -279,10 +298,9 @@ Students must complete at least one quiz daily to maintain their streak.
 ## Offline Support
 
 The system supports offline learning through:
-- **PouchDB** sync with CouchDB
 - **Service Worker** caching
 - **Progressive Web App** features
-- **Local data storage**
+- **Local data storage** for transient quiz state
 
 ## Production Deployment
 
@@ -293,7 +311,8 @@ npm run build
 
 # Set environment variables
 export NODE_ENV=production
-export COUCHDB_URL=your_production_couchdb_url
+export SUPABASE_URL=https://your-project.supabase.co
+export SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key
 
 # Start production server
 npm start
@@ -309,18 +328,14 @@ npm run start
 ```
 
 ### Database Backup
-```bash
-# Backup CouchDB databases
-curl -X GET http://admin:password@localhost:5984/subjects/_all_docs?include_docs=true > subjects_backup.json
-curl -X GET http://admin:password@localhost:5984/quizzes/_all_docs?include_docs=true > quizzes_backup.json
-# Repeat for all databases
-```
+- Enable [Supabase backups](https://supabase.com/docs/guides/platform/backups) for automated snapshots
+- Use the SQL editor to export table data when a manual one-off backup is required
 
 ## Key Features Implemented
 
 ✅ **Complete CRUD for subjects and quizzes**
 ✅ **Real-time streak tracking with daily requirements**
-✅ **Offline-first architecture with CouchDB sync**
+✅ **Supabase-backed data layer with realtime-friendly design**
 ✅ **Role-based access control (Student/Teacher/Admin)**
 ✅ **Responsive design with dark mode support**
 ✅ **Multi-language support**
@@ -331,7 +346,7 @@ curl -X GET http://admin:password@localhost:5984/quizzes/_all_docs?include_docs=
 
 ## Performance Optimizations
 
-- **Database Views** for efficient querying
+- **Supabase SQL indexes** on frequently filtered columns (`subjects.id`, `quizzes.subject_id`, `quiz_responses.student_id`)
 - **React Query/SWR** for data caching
 - **Lazy Loading** of components
 - **Image Optimization** with Next.js
@@ -342,7 +357,7 @@ curl -X GET http://admin:password@localhost:5984/quizzes/_all_docs?include_docs=
 
 - **Clerk Authentication** with role-based access
 - **Input Validation** on all forms
-- **SQL Injection Prevention** (NoSQL)
+- **Parameterized Supabase queries** to avoid SQL injection
 - **CORS Configuration** for API security
 - **Environment Variables** for sensitive data
 

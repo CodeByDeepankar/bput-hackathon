@@ -1,12 +1,15 @@
 // Frontend service for handling daily streaks and quiz completions
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.trim();
+const API_BASE_URL = (RAW_API_BASE_URL && RAW_API_BASE_URL.length
+  ? RAW_API_BASE_URL.replace(/\/$/, '')
+  : '/api');
 
 export class StreakService {
   // Record a quiz completion
   static async recordQuizCompletion(userId, quizData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/quiz-completion`, {
+  const response = await fetch(`${API_BASE_URL}/quiz-completion`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -18,7 +21,18 @@ export class StreakService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let detail = "";
+        try {
+          const payload = await response.json();
+          detail = payload?.error || payload?.message || JSON.stringify(payload).slice(0, 200);
+        } catch {
+          try {
+            detail = (await response.text()).slice(0, 200);
+          } catch {
+            detail = "";
+          }
+        }
+        throw new Error(detail ? `API ${response.status}: ${detail}` : `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -32,7 +46,7 @@ export class StreakService {
   // Get current streak for a user
   static async getCurrentStreak(userId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/streak/${userId}`);
+  const response = await fetch(`${API_BASE_URL}/streak/${userId}`);
 
       // If the backend doesn't have a streak record yet, treat as zero
       if (response.status === 404) return 0;
@@ -59,11 +73,22 @@ export class StreakService {
       if (options.startDate) queryParams.append('startDate', options.startDate);
       if (options.endDate) queryParams.append('endDate', options.endDate);
 
-      const url = `${API_BASE_URL}/quiz-history/${userId}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+  const url = `${API_BASE_URL}/quiz-history/${userId}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let detail = "";
+        try {
+          const payload = await response.json();
+          detail = payload?.error || payload?.message || JSON.stringify(payload).slice(0, 200);
+        } catch {
+          try {
+            detail = (await response.text()).slice(0, 200);
+          } catch {
+            detail = "";
+          }
+        }
+        throw new Error(detail ? `API ${response.status}: ${detail}` : `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -80,11 +105,22 @@ export class StreakService {
       const queryParams = new URLSearchParams();
       if (date) queryParams.append('date', date);
 
-      const url = `${API_BASE_URL}/daily-activity/${userId}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+  const url = `${API_BASE_URL}/daily-activity/${userId}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let detail = "";
+        try {
+          const payload = await response.json();
+          detail = payload?.error || payload?.message || JSON.stringify(payload).slice(0, 200);
+        } catch {
+          try {
+            detail = (await response.text()).slice(0, 200);
+          } catch {
+            detail = "";
+          }
+        }
+        throw new Error(detail ? `API ${response.status}: ${detail}` : `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -115,7 +151,18 @@ export class StreakService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let detail = "";
+        try {
+          const payload = await response.json();
+          detail = payload?.error || payload?.message || JSON.stringify(payload).slice(0, 200);
+        } catch {
+          try {
+            detail = (await response.text()).slice(0, 200);
+          } catch {
+            detail = "";
+          }
+        }
+        throw new Error(detail ? `API ${response.status}: ${detail}` : `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();

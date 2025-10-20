@@ -29,21 +29,16 @@ function runCommand(command, args, cwd) {
 
 async function setup() {
   try {
-    // Install backend dependencies
-    console.log('📦 Installing backend dependencies...');
-    await runCommand('npm', ['install'], path.join(__dirname, 'backend'));
-    
     // Install frontend dependencies
     console.log('📦 Installing frontend dependencies...');
     await runCommand('npm', ['install'], path.join(__dirname, 'frontend'));
     
     console.log('\n✅ Setup completed successfully!');
-    console.log('\n📋 Next steps:');
-    console.log('1. Make sure CouchDB is running on your system');
-    console.log('2. Update backend/.env with your CouchDB credentials');
-    console.log('3. Run: cd backend && npm start');
-    console.log('4. Run: cd frontend && npm run dev');
-    console.log('5. Visit: http://localhost:3000');
+  console.log('\n📋 Next steps:');
+  console.log('1. Create or configure your Supabase project (https://supabase.com)');
+  console.log('2. Update frontend/.env.local with your Supabase credentials');
+  console.log('3. Run: cd frontend && npm run dev');
+  console.log('4. Visit: http://localhost:3000');
     
   } catch (error) {
     console.error('❌ Setup failed:', error.message);

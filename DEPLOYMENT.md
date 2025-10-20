@@ -4,7 +4,7 @@
 
 ### Prerequisites
 - Node.js (v18 or higher)
-- CouchDB (v3.0 or higher)
+- Supabase project with access to Project URL and Service Role key
 - Git
 
 ### 1. Clone and Setup
@@ -14,23 +14,12 @@ cd hackthon-sih
 node setup.js
 ```
 
-### 2. Configure CouchDB
+### 2. Configure Supabase
 
-#### Option A: Default CouchDB Setup
-1. Install CouchDB on your machine
-2. Start CouchDB service
-3. Access CouchDB admin panel: http://localhost:5984/_utils
-4. Create admin user (recommended: admin/password)
-
-#### Option B: Docker CouchDB (Recommended)
-```bash
-# Run CouchDB in Docker
-docker run -d --name couchdb \
-  -p 5984:5984 \
-  -e COUCHDB_USER=admin \
-  -e COUCHDB_PASSWORD=password \
-  apache/couchdb:3.3
-```
+1. Sign in to [Supabase](https://supabase.com/) and create a new project
+2. From *Project Settings → API*, copy the **Project URL** and **Service Role** key
+3. (Optional) Copy the **anon** key if the frontend will call Supabase directly
+4. Use the SQL editor to provision tables such as `subjects`, `quizzes`, `questions`, `student_progress`, `quiz_responses`, `streaks`, and `achievements`
 
 ### 3. Configure Environment Variables
 
@@ -44,9 +33,10 @@ cp .env.example .env
 Edit `backend/.env`:
 ```env
 # Database Configuration
-COUCHDB_URL=http://127.0.0.1:5984
-COUCHDB_USERNAME=admin
-COUCHDB_PASSWORD=password
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+# Optional if exposing anon key via backend endpoints
+# SUPABASE_ANON_KEY=your-anon-key
 
 # Server Configuration
 PORT=4000
@@ -73,7 +63,7 @@ npm run dev
 ```
 
 ### 5. Initialize Database
-Visit: http://localhost:4000/setup-views to create database views
+Supabase manages views automatically. Ensure the required tables exist and contain seed data if needed.
 
 ### 6. Health Check
 Visit: http://localhost:4000/health to verify everything is working
@@ -83,13 +73,13 @@ Visit: http://localhost:4000/health to verify everything is working
 ### "Failed to fetch" Error
 This usually means:
 1. **Backend not running**: Make sure backend server is running on port 4000
-2. **CouchDB not accessible**: Check if CouchDB is running and credentials are correct
+2. **Supabase credentials invalid**: Confirm URL and Service Role key in `.env`
 3. **CORS issues**: Ensure frontend URL is in CORS configuration
 
 ### Database Connection Issues
-1. Check CouchDB is running: `curl http://localhost:5984`
-2. Verify credentials in `.env` file
-3. Check database logs for connection errors
+1. Verify `.env` contains `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`
+2. Regenerate the Service Role key if it was rotated
+3. Inspect Supabase logs (Dashboard → Logs) for errors
 
 ### Port Already in Use
 ```bash
@@ -105,9 +95,10 @@ npx kill-port 3000
 ### Environment Variables for Production
 ```env
 NODE_ENV=production
-COUCHDB_URL=https://your-couchdb-server.com
-COUCHDB_USERNAME=your-username
-COUCHDB_PASSWORD=your-secure-password
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key
+# Optional anon key if required by your deployment
+# SUPABASE_ANON_KEY=your-anon-key
 FRONTEND_URL=https://your-domain.com
 PORT=4000
 ```
@@ -141,26 +132,15 @@ CMD ["npm", "start"]
 ```yaml
 version: '3.8'
 services:
-  couchdb:
-    image: apache/couchdb:3.3
-    environment:
-      - COUCHDB_USER=admin
-      - COUCHDB_PASSWORD=password
-    ports:
-      - "5984:5984"
-    volumes:
-      - couchdb_data:/opt/couchdb/data
-
   backend:
     build: ./backend
     environment:
-      - COUCHDB_URL=http://couchdb:5984
-      - COUCHDB_USERNAME=admin
-      - COUCHDB_PASSWORD=password
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - PORT=4000
     ports:
       - "4000:4000"
-    depends_on:
-      - couchdb
 
   frontend:
     build: ./frontend
@@ -168,14 +148,11 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-
-volumes:
-  couchdb_data:
 ```
 
 ## 📊 Database Schema
 
-The application creates these databases automatically:
+Ensure your Supabase project includes tables that align with the application's expectations:
 - `users` - User roles and school information
 - `subjects` - Educational subjects
 - `quizzes` - Quiz definitions
@@ -186,7 +163,7 @@ The application creates these databases automatically:
 
 ## 🔐 Security Notes
 
-1. Change default CouchDB admin password
+1. Rotate Supabase service role keys regularly and store them securely
 2. Use environment variables for all credentials
 3. Enable HTTPS in production
 4. Configure proper CORS origins
@@ -206,7 +183,7 @@ The application creates these databases automatically:
 If you encounter issues:
 1. Check the health endpoint: http://localhost:4000/health
 2. Review server logs for errors
-3. Verify CouchDB connectivity
+3. Verify Supabase connectivity via dashboard queries
 4. Ensure all environment variables are set correctly
 
 ## 🔄 Updates
@@ -218,4 +195,4 @@ cd backend && npm install
 cd ../frontend && npm install
 ```
 
-Remember to backup your CouchDB data before updates!
+Remember to schedule Supabase backups before updates!

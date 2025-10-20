@@ -4,8 +4,8 @@ import { promises as fs } from 'fs';
 
 export const runtime = 'nodejs';
 
-export async function GET(request, { params }) {
-  const { id } = params;
+export async function GET(request, context) {
+  const { id } = await context.params;
   const { searchParams } = new URL(request.url);
   const lang = (searchParams.get('lang') || 'en').toLowerCase();
 

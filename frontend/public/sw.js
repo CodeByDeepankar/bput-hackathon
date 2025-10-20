@@ -169,7 +169,7 @@ self.addEventListener('fetch', (event) => {
 
   // Queue non-GET API requests when offline
   if (!isGet) {
-    const isApi = url.pathname.startsWith('/api/') || url.origin.includes('localhost:4000');
+  const isApi = url.pathname.startsWith('/api/');
     if (isApi) {
       event.respondWith((async () => {
         try {
@@ -257,7 +257,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // API & data endpoints: network-first with fallback to cache / IndexedDB
-  const isData = url.pathname.startsWith('/api/') || url.origin.includes('localhost:4000') || url.pathname.includes('/quiz') || url.pathname.includes('/streak') || url.pathname.startsWith('/subjects') || url.pathname.startsWith('/leaderboard');
+  const isData = url.pathname.startsWith('/api/') || url.pathname.includes('/quiz') || url.pathname.includes('/streak') || url.pathname.startsWith('/subjects') || url.pathname.startsWith('/leaderboard');
   if (isData) {
     event.respondWith(
       (async () => {
