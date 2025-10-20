@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/student/components/ui/button";
 import { Card } from "@/student/components/ui/card";
 import { cn } from "@/student/components/ui/utils";
-import { BookOpen, Trophy, Star, Search, Gamepad2, Crown, Award, Home } from "lucide-react";
+import { BookOpen, Trophy, Star, Search, Gamepad2, Crown, Award, Home, ClipboardList } from "lucide-react";
 import { Input } from "@/student/components/ui/input";
 import { useI18n } from "@/i18n/useI18n";
 import { HamburgerMenu } from "@/student/components/hamburger-menu";
@@ -16,6 +16,7 @@ import { useTheme } from "@/components/ThemeProvider";
 const makeNavItems = (t) => [
   { href: "/student", label: t.nav.dashboard(), icon: Home },
   { href: "/student/courses", label: t.nav.courses(), icon: BookOpen },
+  { href: "/student/quiz", label: "Quiz", icon: ClipboardList },
   { href: "/student/achievements", label: t.nav.achievements(), icon: Star },
   { href: "/student/leaderboard", label: t.nav.leaderboard(), icon: Trophy },
   { href: "/student/search", label: t.nav.search(), icon: Search },

@@ -6,7 +6,8 @@ import { useUser } from "@clerk/nextjs";
 import { saveUserRole } from "@/lib/users";
 import styles from "./role-select.module.css";
 
-const classes = [6, 7, 8, 9, 10, 11, 12];
+const branches = ["CSE", "EE", "Civil", "ME"];
+const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export default function RoleSelectPage() {
   const { user, isLoaded } = useUser();
@@ -14,8 +15,9 @@ export default function RoleSelectPage() {
   const [step, setStep] = useState(1);
   const [role, setRole] = useState(null);
   const [name, setName] = useState("");
-  const [schoolId, setSchoolId] = useState("");
-  const [klass, setKlass] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [branch, setBranch] = useState("");
+  const [semester, setSemester] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -24,16 +26,22 @@ export default function RoleSelectPage() {
 
   const canContinue = useMemo(() => !!role, [role]);
   const canSubmit = useMemo(() => {
-    if (!name || !schoolId) return false;
-    if (role === "student") return !!klass;
+    if (!name || !registrationNumber) return false;
+    if (role === "student") return !!branch && !!semester;
     return true;
-  }, [name, schoolId, klass, role]);
+  }, [name, registrationNumber, branch, semester, role]);
 
   async function submit() {
     if (!user) return;
     setSaving(true);
     try {
-      await saveUserRole({ userId: user.id, role, name, schoolId, class: role === "student" ? Number(klass) : undefined });
+      await saveUserRole({ 
+        userId: user.id, 
+        role, 
+        name, 
+        schoolId: registrationNumber, 
+        class: role === "student" ? `${branch}-Sem${semester}` : undefined 
+      });
       router.replace(role === "student" ? "/student" : "/teacher");
     } catch (e) {
       alert(e.message);
@@ -87,19 +95,30 @@ export default function RoleSelectPage() {
                 <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" />
               </div>
               {role === "student" && (
-                <div>
-                  <label className={styles.formLabel}>Class<span className={styles.requiredStar}>*</span></label>
-                  <select className={styles.select} value={klass} onChange={(e) => setKlass(e.target.value)}>
-                    <option value="">Select class</option>
-                    {classes.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
+                <>
+                  <div>
+                    <label className={styles.formLabel}>Branch<span className={styles.requiredStar}>*</span></label>
+                    <select className={styles.select} value={branch} onChange={(e) => setBranch(e.target.value)}>
+                      <option value="">Select branch</option>
+                      {branches.map((b) => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={styles.formLabel}>Semester<span className={styles.requiredStar}>*</span></label>
+                    <select className={styles.select} value={semester} onChange={(e) => setSemester(e.target.value)}>
+                      <option value="">Select semester</option>
+                      {semesters.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
               )}
               <div>
-                <label className={styles.formLabel}>School ID<span className={styles.requiredStar}>*</span></label>
-                <input className={styles.input} value={schoolId} onChange={(e) => setSchoolId(e.target.value)} placeholder="School ID" />
+                <label className={styles.formLabel}>Registration Number<span className={styles.requiredStar}>*</span></label>
+                <input className={styles.input} value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="Registration Number" />
               </div>
             </div>
             <div className={styles.buttonRow}>

@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
 
-:root {
+.wrapper {
+  /* CSS Variables defined at wrapper level */
   --primary-blue: #3498db;
   --primary-green: #2ecc71;
   --primary-green-dark: #27ae60;
@@ -12,9 +13,7 @@
   --card-dark: #0f1115;
   --text-light: #e6eef6;
   --border-dark: #1f2937;
-}
 
-.wrapper {
   min-height: 100vh; /* full viewport */
   display: flex;
   align-items: center;
