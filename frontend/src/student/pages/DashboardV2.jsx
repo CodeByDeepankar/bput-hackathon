@@ -1,10 +1,11 @@
-import { BookOpen, Sparkles, Star, Gift, Trophy, Zap, Target, Brain, Send, TrendingUp, Clock, Award } from 'lucide-react';
+import { BookOpen, Sparkles, Star, Gift, Trophy, Zap, Target, Brain, Send, TrendingUp, Clock, Award, Database, Layers, Cpu, HardDrive } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { useUser } from '@clerk/nextjs';
 import { useI18n } from '@/i18n/useI18n';
 import { useState } from 'react';
+import SkillTrackCard from '../components/SkillTrackCard';
 
 export default function DashboardV2({ user = {} }) {
   const { user: clerkUser } = useUser();
@@ -22,6 +23,34 @@ export default function DashboardV2({ user = {} }) {
   // Simulated AI-detected knowledge gap
   const detectedGap = 'Data Structures';
   const recommendedGame = 'Big O Runner';
+  
+  // CSE skill tracks list (can be dynamic later)
+  const cseSkillTracks = [
+    {
+      title: 'Data Structures',
+      icon: <Layers className="w-6 h-6" />,
+      progress: 60,
+      isRecommended: true,
+    },
+    {
+      title: 'Algorithms',
+      icon: <Cpu className="w-6 h-6" />,
+      progress: 45,
+      isRecommended: false,
+    },
+    {
+      title: 'Database Systems',
+      icon: <Database className="w-6 h-6" />,
+      progress: 20,
+      isRecommended: false,
+    },
+    {
+      title: 'Operating Systems',
+      icon: <HardDrive className="w-6 h-6" />,
+      progress: 32,
+      isRecommended: false,
+    },
+  ];
 
   return (
     <div className="min-h-screen pb-10 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
@@ -99,73 +128,26 @@ export default function DashboardV2({ user = {} }) {
                   </button>
                 </div>
                 
-                <div className="space-y-4">
-                  {[
-                    { 
-                      name: 'Data Structures', 
-                      progress: 60, 
-                      color: 'from-blue-500 to-cyan-500',
-                      icon: '📊',
-                      status: 'Active',
-                      lessons: 12,
-                      nextTopic: 'Binary Trees'
-                    },
-                    { 
-                      name: 'Algorithms', 
-                      progress: 45, 
-                      color: 'from-purple-500 to-pink-500',
-                      icon: '⚡',
-                      status: 'In Progress',
-                      lessons: 8,
-                      nextTopic: 'Sorting'
-                    },
-                    { 
-                      name: 'Database Management', 
-                      progress: 78, 
-                      color: 'from-green-500 to-emerald-500',
-                      icon: '🗄️',
-                      status: 'Almost Done',
-                      lessons: 15,
-                      nextTopic: 'Normalization'
-                    },
-                    { 
-                      name: 'Operating Systems', 
-                      progress: 32, 
-                      color: 'from-orange-500 to-red-500',
-                      icon: '💻',
-                      status: 'Started',
-                      lessons: 5,
-                      nextTopic: 'Process Management'
-                    },
-                  ].map((track) => (
-                    <Card key={track.name} className="border-2 border-slate-600 hover:border-purple-400 transition-all hover:shadow-md bg-slate-700 dark:bg-slate-800">
-                      <CardContent className="p-5">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${track.color} grid place-items-center text-2xl shadow-lg`}>
-                            {track.icon}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="font-semibold text-lg text-white">{track.name}</h3>
-                              <span className="text-2xl font-bold text-purple-400">{track.progress}%</span>
-                            </div>
-                            <div className="text-sm text-gray-300 mb-2">
-                              <span className="font-medium">{track.status}</span> • {track.lessons} lessons • Next: {track.nextTopic}
-                            </div>
-                            <Progress value={track.progress} className="h-2.5 mb-3" />
-                            <div className="flex gap-2">
-                              <Button size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
-                                Continue Learning
-                              </Button>
-                              <Button size="sm" variant="outline" className="border-gray-500 text-white hover:bg-slate-600">
-                                <Trophy className="w-3 h-3 mr-1" />
-                                Practice
-                              </Button>
-                            </div>
-                          </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {cseSkillTracks.map((track) => (
+                    <SkillTrackCard
+                      key={track.title}
+                      title={track.title}
+                      icon={track.icon}
+                      progress={track.progress}
+                      isRecommended={track.isRecommended}
+                      footer={(
+                        <div className="flex gap-2 mt-4">
+                          <Button size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
+                            Continue Learning
+                          </Button>
+                          <Button size="sm" variant="outline" className="border-gray-500 text-white hover:bg-slate-600">
+                            <Trophy className="w-3 h-3 mr-1" />
+                            Practice
+                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
+                      )}
+                    />
                   ))}
                 </div>
               </CardContent>

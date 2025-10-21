@@ -1,51 +1,50 @@
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Progress } from "./ui/progress";
-import { Badge } from "./ui/badge";
+import { Card, CardContent } from "./ui/card";
 import { SubHeader } from "./sub-header";
-import { Calculator, Beaker, Book, Globe, Clock, Users, Star, Play } from "lucide-react";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { Layers, Cpu, Database, HardDrive, Network, CircuitBoard } from "lucide-react";
 import { useI18n } from "@/i18n/useI18n";
+import SkillTrackCard from "./SkillTrackCard";
 
 export default function CourseSelection() {
 	const { t } = useI18n();
-	// Keep four slots for the image-only cards; metadata retained for alt text only
-	const courses = [
-		{ id: 'Mathematics', title: t.courses.titles.mathematics() },
-		{ id: 'Science', title: t.courses.titles.science() },
-		{ id: 'Geography', title: t.courses.titles.geography() },
-		{ id: 'More', title: t.common.more() },
-	];
 
-		const imageSources = [
-			'/courses.img/s.png', // 1st card
-			'/courses.img/t.png', // 2nd card
-			'/courses.img/e.png', // 3rd card
-			'/courses.img/m.png', // 4th card
+	// CSE Skill Tracks (can be fetched per-user later)
+		const cseSkillTracks = [
+			{ title: "Data Structures", icon: <Layers className="w-6 h-6" />, progress: 60, isRecommended: true, imageSrc: "/courses.img/ds.jpg" },
+			{ title: "Algorithms", icon: <Cpu className="w-6 h-6" />, progress: 35, isRecommended: false, imageSrc: "/courses.img/Algorithmr.jpg" },
+			{ title: "Database Systems", icon: <Database className="w-6 h-6" />, progress: 20, isRecommended: false, imageSrc: "/courses.img/database-system.jpg" },
+			{ title: "Operating Systems", icon: <HardDrive className="w-6 h-6" />, progress: 10, isRecommended: false, imageSrc: "/courses.img/pngtree-operating-system.jpg" },
+			{ title: "Computer Networks", icon: <Network className="w-6 h-6" />, progress: 0, isRecommended: false, imageSrc: "/courses.img/CN.png" },
+			{ title: "Digital Logic & Microprocessors", icon: <CircuitBoard className="w-6 h-6" />, progress: 0, isRecommended: false, imageSrc: "/courses.img/digital%20logic.png" },
 		];
 
 	return (
 		<div className="space-y-4">
 			<SubHeader showProgress showStreak user={{ streak: 7, xp: 620, xpToNextLevel: 1000, level: 10 }} />
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-						{courses.map((c, idx) => {
-							const img = imageSources[idx] || imageSources[0];
-							return (
-																	<Card
-																		key={c.id}
-																		className="overflow-hidden cursor-pointer transition-transform duration-150 transform-gpu hover:scale-[1.02]"
-																	>
-															<CardContent className="p-0">
-																<ImageWithFallback
-																	src={img}
-																	alt={c.title}
-																	className="w-full h-auto block"
-																/>
-															</CardContent>
-														</Card>
-							);
-						})}
+
+			<Card className="border-2 bg-slate-800 dark:bg-slate-900">
+				<CardContent className="p-6">
+					<div className="flex items-center justify-between mb-5">
+						<div>
+							<h2 className="text-xl font-bold text-white">My Engineering Skill Tracks</h2>
+							<p className="text-sm text-gray-300">Branch: CSE</p>
+						</div>
 					</div>
+
+								<div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+									{cseSkillTracks.map((track) => (
+							<SkillTrackCard
+								key={track.title}
+								title={track.title}
+								icon={track.icon}
+								progress={track.progress}
+								isRecommended={track.isRecommended}
+											imageSrc={track.imageSrc}
+											variant="image-cover"
+							/>
+						))}
+					</div>
+				</CardContent>
+			</Card>
 		</div>
 	);
 }
