@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import "./style.css";
 
-export default function BigORunnerPage() {
+function BigORunnerContent() {
   const searchParams = useSearchParams();
   const [showRecommendation, setShowRecommendation] = useState(false);
   const [recommendationMessage, setRecommendationMessage] = useState("");
@@ -14,11 +14,10 @@ export default function BigORunnerPage() {
     script.async = true;
     document.body.appendChild(script);
 
-    // Check if user was redirected from quiz
-    const reason = searchParams.get('reason');
-    const fromQuiz = searchParams.get('from');
-    
-    if (reason && fromQuiz === 'quiz') {
+    const reason = searchParams.get("reason");
+    const fromQuiz = searchParams.get("from");
+
+    if (reason && fromQuiz === "quiz") {
       setRecommendationMessage(reason);
       setShowRecommendation(true);
     }
@@ -30,7 +29,6 @@ export default function BigORunnerPage() {
 
   return (
     <main className="big-o-runner">
-      {/* AI Recommendation Banner */}
       {showRecommendation && (
         <div className="recommendation-banner">
           <div className="recommendation-content">
@@ -39,8 +37,8 @@ export default function BigORunnerPage() {
               <strong>Gyanaratna AI Recommendation:</strong>
               <p>{recommendationMessage}</p>
             </div>
-            <button 
-              className="recommendation-close" 
+            <button
+              className="recommendation-close"
               onClick={() => setShowRecommendation(false)}
               aria-label="Close"
             >
@@ -52,7 +50,6 @@ export default function BigORunnerPage() {
 
       <h1 className="title">The Big O Runner</h1>
 
-      {/* Selection Screen */}
       <div id="selectionScreen" className="selection-screen">
         <h2>Select Your Algorithm (Power-Up)</h2>
         <div className="buttons">
@@ -62,14 +59,27 @@ export default function BigORunnerPage() {
         </div>
       </div>
 
-      {/* Game Screen (hidden by default; script can toggle visibility) */}
       <div id="gameScreen" className="game-screen" style={{ display: "none" }}>
         <h2 id="gameModeTitle">Mode</h2>
         <canvas id="gameCanvas" width={800} height={400} />
       </div>
 
-      {/* Game Info */}
       <div id="gameInfo" className="game-info"></div>
     </main>
+  );
+}
+
+export default function BigORunnerPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="big-o-runner">
+          <h1 className="title">The Big O Runner</h1>
+          <p>Loading game...</p>
+        </main>
+      }
+    >
+      <BigORunnerContent />
+    </Suspense>
   );
 }
