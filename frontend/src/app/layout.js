@@ -16,6 +16,12 @@ export const metadata = {
   title: 'GYANARATNA',
 };
 
+// Mobile viewport configuration for responsive behavior
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">

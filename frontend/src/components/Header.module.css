@@ -1,0 +1,10 @@
+/* Header.module.css - control profile picture visibility on small screens */
+.profilePicture {
+  margin-left: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .profilePicture {
+    display: none;
+  }
+}
