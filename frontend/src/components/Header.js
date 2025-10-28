@@ -1,7 +1,9 @@
 "use client"; // if you use hooks or state
+import headerStyles from './Header.module.css';
 
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { openSignIn } from '@/lib/openSignIn';
 import { usePathname } from "next/navigation";
 // LanguageToggle replaced by Google Translate widget in PreHeader
 // import LanguageToggle from "@/components/LanguageToggle";
@@ -29,10 +31,10 @@ export default function Header() {
 
   return (
     <header
-      className="p-4 w-[80vw] m-auto flex justify-between items-center"
+      className="w-full max-w-7xl mx-auto px-4 py-3 flex justify-between items-center relative z-50"
       style={isLight ? { backgroundColor: "#ffffff", color: "#000000" } : { backgroundColor: "#000000", color: "#f8fafc" }}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
         {/* Use public asset with absolute path; fallback to initials if missing */}
         {(() => {
           const [ok] = [true];
@@ -42,7 +44,7 @@ export default function Header() {
             <div className="w-8 h-8 rounded bg-white text-blue-600 flex items-center justify-center text-xs font-bold">SL</div>
           );
         })()}
-        <h1 className="text-xl font-bold">GYANARATNA</h1>
+        <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate max-w-[10rem] sm:max-w-[14rem]">GYANARATNA</h1>
       </div>
       <nav>
         {isWelcome ? (
@@ -56,60 +58,64 @@ export default function Header() {
           </div>
         ) : isStudentShell ? (
           // Replace nav with language toggle + online badge + Clerk profile button on student pages
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <OnlineBadge />
             {/* Google Translate dropdown appears in PreHeader */}
             <ThemeToggle />
             <PreHeader />
             <SignedIn>
-              <UserButton afterSignOutUrl="/" />
+              <div className={headerStyles.profilePicture}>
+                <UserButton afterSignOutUrl="/" />
+              </div>
             </SignedIn>
             <SignedOut>
-              <Link href="/sign-in">Sign in</Link>
+              <button onClick={(e) => { e.preventDefault(); openSignIn('/sign-in'); }} className="text-sm text-blue-600 hover:underline">Sign in</button>
             </SignedOut>
           </div>
         ) : isTeacherShell ? (
           // On teacher routes, remove the default nav links (Home/Student/Teacher/Contact)
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <ThemeToggle />
             <PreHeader />
             <SignedIn>
-              <UserButton afterSignOutUrl="/" />
+              <div className={headerStyles.profilePicture}>
+                <UserButton afterSignOutUrl="/" />
+              </div>
             </SignedIn>
             <SignedOut>
-              <Link href="/sign-in">Sign in</Link>
+              <button onClick={(e) => { e.preventDefault(); openSignIn('/sign-in'); }} className="text-sm text-blue-600 hover:underline">Sign in</button>
             </SignedOut>
           </div>
         ) : (
-          <ul className="flex space-x-4 items-center">
-            <li>
-              <Link href="/">Home</Link>
-            </li>
-            {!isRoleSelect && (
-              <>
-                <li>
-                  <Link href="/student">Student</Link>
-                </li>
-                <li>
-                  <Link href="/teacher">Teacher</Link>
-                </li>
-              </>
-            )}
-            <li>
-              <Link href="/contact">Contact</Link>
-            </li>
-            <li>
-              <ThemeToggle />
-            </li>
-            <li>
-              <SignedIn>
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <ul className="hidden md:flex space-x-4 items-center">
+              <li>
+                <Link href="/">Home</Link>
+              </li>
+              {!isRoleSelect && (
+                <>
+                  <li>
+                    <Link href="/student">Student</Link>
+                  </li>
+                  <li>
+                    <Link href="/teacher">Teacher</Link>
+                  </li>
+                </>
+              )}
+              <li>
+                <Link href="/contact">Contact</Link>
+              </li>
+            </ul>
+            <ThemeToggle />
+            <SignedIn>
+              <div className={headerStyles.profilePicture}>
                 <UserButton afterSignOutUrl="/" />
-              </SignedIn>
-              <SignedOut>
-                <Link href="/sign-in">Sign in</Link>
-              </SignedOut>
-            </li>
-          </ul>
+              </div>
+            </SignedIn>
+            <SignedOut>
+              <button onClick={(e) => { e.preventDefault(); openSignIn('/sign-in'); }} className="text-sm text-blue-600 hover:underline">Sign in</button>
+            </SignedOut>
+          </div>
         )}
       </nav>
     </header>

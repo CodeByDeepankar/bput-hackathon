@@ -1,4 +1,8 @@
+"use client";
+
 import { useState } from "react";
+import styles from './hamburger-menu.module.css';
+import { useUser } from '@clerk/nextjs';
 import { useRouter } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
 import { Button } from "./ui/button";
@@ -11,6 +15,8 @@ import { Menu, BookOpen, Map, Gamepad2, Heart, Swords, Users, Award, UserCheck, 
 export function HamburgerMenu({ userRole, currentSection, studentUser, teacherUser, menuItems, onNavigate, onRoleSwitch }) { const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const { signOut } = useClerk();
+
+  const { isLoaded, isSignedIn, user } = useUser();
 
   const handleNavigate = (section) => {
     onNavigate(section);
@@ -31,35 +37,32 @@ export function HamburgerMenu({ userRole, currentSection, studentUser, teacherUs
       >
         <div className="flex flex-col h-full">
           { /* User Profile Section */ }
-          <SheetHeader className="p-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-12 h-12 border-2 border-white/20">
-                <AvatarFallback className="bg-white/10 text-white">
-                  { currentUser.avatar }
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <SheetTitle className="text-white text-left">
-                  { currentUser.name }
-                </SheetTitle>
-                <div className="flex items-center gap-2 mt-1">
-                  { userRole === 'student' ? (
-                    <>
-                      <Badge variant="secondary" className="bg-white/20 text-white border-white/20">
-                        Student
-                      </Badge>
-                    </>
-                  ) : (
-                    <>
-                      <Badge variant="secondary" className="bg-white/20 text-white border-white/20">
-                        Teacher
-                      </Badge>
-                      <span className="text-sm">{teacherUser.school }</span>
-                    </>
-                  )}
-                </div>
+          <SheetHeader className={`p-0 ${styles.sidebarHeader}`}>
+            <div className={styles.leftGroup}>
+              {isLoaded && isSignedIn && user?.imageUrl ? (
+                // Use a plain <img> for external Clerk-hosted images to avoid requiring
+                // adding external domains to next.config.js while keeping a simple fallback.
+                <img
+                  src={user.imageUrl}
+                  alt={user.fullName || currentUser.name}
+                  width={48}
+                  height={48}
+                  className={styles.sidebarProfilePic}
+                  loading="lazy"
+                />
+              ) : (
+                <Avatar className="w-12 h-12 border-2 border-white/20">
+                  <AvatarFallback className="bg-white/10 text-white">{currentUser.avatar}</AvatarFallback>
+                </Avatar>
+              )}
+
+              <div className={styles.userInfo}>
+                <div className={styles.userName}>{currentUser.name}</div>
+                <div className={styles.userRole}>{userRole === 'student' ? 'Student' : 'Teacher'}</div>
               </div>
             </div>
+
+            <button className={styles.closeButton} onClick={() => setIsOpen(false)} aria-label="Close menu">✕</button>
           </SheetHeader>
 
           { /* Navigation Items */ }
