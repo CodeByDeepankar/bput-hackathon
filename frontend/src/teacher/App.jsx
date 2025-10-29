@@ -145,7 +145,7 @@ export default function App() { const [currentView, setCurrentView] = useState('
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       { /* Sidebar */ }
-      <div className="hidden flex-shrink-0 flex-col bg-sidebar p-6 text-sidebar-foreground md:flex md:w-64">
+      <div className="w-64 bg-sidebar text-sidebar-foreground p-6 flex flex-col">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
             <span className="text-white font-bold text-lg">S</span>

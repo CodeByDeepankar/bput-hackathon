@@ -56,46 +56,54 @@ export default function DashboardV2({ user = {} }) {
     <div className="min-h-screen pb-10 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       {/* Two-Column Layout Container */}
       <div className="max-w-[1600px] mx-auto px-4 pt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+  <div className="dashboard-layout flex flex-col lg:flex-row gap-6 max-w-full">
           
           {/* ============================================================ */}
           {/* LEFT COLUMN - Main Feed (70%) */}
           {/* ============================================================ */}
-          <div className="space-y-6">
+          <div className="main-feed w-full lg:w-3/4 space-y-6">
             
             {/* AI-Powered Hero Banner */}
-            <Card className="relative overflow-hidden border-2 border-purple-200 dark:border-purple-800 shadow-xl">
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 opacity-90" />
-              <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+            <Card
+              className="relative overflow-hidden bg-none border-2 border-purple-200 dark:border-purple-800 shadow-xl min-h-[220px] sm:min-h-[260px] md:min-h-[300px] bg-clip-border"
+              style={{
+                backgroundImage: 'linear-gradient(135deg,#6366f1 0%, #7c3aed 45%, #ec4899 100%)',
+                WebkitBackgroundClip: 'border-box'
+              }}
+            >
+              {/* decorative circles only on md+ */}
+              <div className="hidden md:block absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <div className="hidden md:block absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
               
-              <CardContent className="relative z-10 p-8 text-white">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse" />
-                  <p className="text-sm font-medium text-yellow-100">AI-Powered Learning Assistant</p>
+              <CardContent className="relative z-10 p-4 sm:p-6 md:p-8 text-white min-h-[160px] sm:min-h-[180px] md:min-h-[220px]">
+                <div className="mb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse" />
+                    <p className="text-sm font-medium text-yellow-100">AI-Powered Learning Assistant</p>
+                  </div>
+
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 leading-tight whitespace-normal break-words">
+                    Your AI-Powered Next Step
+                  </h1>
+
+                  <p className="text-white/90 text-base max-w-full sm:max-w-2xl mb-6 whitespace-normal break-words leading-relaxed">
+                    Based on your recent quiz, the AI has identified a knowledge gap in <span className="font-semibold text-yellow-300">{detectedGap}</span>. 
+                    Let's strengthen your foundation!
+                  </p>
                 </div>
                 
-                <h1 className="text-3xl sm:text-4xl font-bold mb-3">
-                  Your AI-Powered Next Step
-                </h1>
-                
-                <p className="text-white/90 text-base max-w-2xl mb-6">
-                  Based on your recent quiz, the AI has identified a knowledge gap in <span className="font-semibold text-yellow-300">{detectedGap}</span>. 
-                  Let's strengthen your foundation!
-                </p>
-                
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button 
-                    size="lg" 
-                    className="bg-white text-purple-700 hover:bg-yellow-50 hover:text-purple-800 font-semibold shadow-lg transition-all duration-200 hover:scale-105"
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-2">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto bg-white text-purple-700 hover:bg-yellow-50 hover:text-purple-800 font-semibold shadow-lg transition-all duration-200 hover:scale-105 justify-center"
                   >
                     <Brain className="w-4 h-4 mr-2" />
                     Start AI-Recommended Module
                   </Button>
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    className="bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm font-semibold"
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm font-semibold"
                   >
                     <Trophy className="w-4 h-4 mr-2" />
                     Play {recommendedGame}
@@ -103,7 +111,7 @@ export default function DashboardV2({ user = {} }) {
                 </div>
                 
                 {/* AI Insight Badge */}
-                <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-sm border border-white/30">
+                <div className="mt-4 sm:mt-6 inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-sm border border-white/30">
                   <Zap className="w-4 h-4 text-yellow-300" />
                   <span>AI Confidence: 92% match for your learning style</span>
                 </div>
@@ -128,7 +136,7 @@ export default function DashboardV2({ user = {} }) {
                   </button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="skill-tracks-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {cseSkillTracks.map((track) => (
                     <SkillTrackCard
                       key={track.title}
@@ -137,11 +145,11 @@ export default function DashboardV2({ user = {} }) {
                       progress={track.progress}
                       isRecommended={track.isRecommended}
                       footer={(
-                        <div className="flex gap-2 mt-4">
-                          <Button size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
+                        <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                          <Button size="sm" className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white justify-center">
                             Continue Learning
                           </Button>
-                          <Button size="sm" variant="outline" className="border-gray-500 text-white hover:bg-slate-600">
+                          <Button size="sm" variant="outline" className="w-full sm:w-auto border-gray-500 text-white hover:bg-slate-600">
                             <Trophy className="w-3 h-3 mr-1" />
                             Practice
                           </Button>
@@ -154,7 +162,7 @@ export default function DashboardV2({ user = {} }) {
             </Card>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { label: 'Browse Courses', icon: <BookOpen className="w-5 h-5" />, color: 'from-blue-500 to-cyan-500' },
                 { label: 'Take Quiz', icon: <Trophy className="w-5 h-5" />, color: 'from-purple-500 to-pink-500' },
@@ -164,7 +172,7 @@ export default function DashboardV2({ user = {} }) {
                 <Button 
                   key={action.label}
                   variant="outline" 
-                  className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform border-2 border-slate-600 hover:border-purple-400 bg-slate-700 dark:bg-slate-800 text-white"
+                  className="h-20 sm:h-24 w-full flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform border-2 border-slate-600 hover:border-purple-400 bg-slate-700 dark:bg-slate-800 text-white"
                 >
                   <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${action.color} grid place-items-center text-white`}>
                     {action.icon}
@@ -179,12 +187,13 @@ export default function DashboardV2({ user = {} }) {
           {/* ============================================================ */}
           {/* RIGHT COLUMN - Sidebar (30%) */}
           {/* ============================================================ */}
-          <div className="space-y-6">
+          <div className="sidebar w-full lg:w-1/4 space-y-6 lg:sticky lg:top-20">
             
             {/* Student Profile Card */}
             <Card className="shadow-xl border-2 border-purple-200 dark:border-purple-800 overflow-hidden bg-slate-800 dark:bg-slate-900">
               <div className="h-20 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600" />
-              <CardContent className="p-6 -mt-10">
+              {/* avoid negative overlap on small screens to prevent hero/content overlap */}
+              <CardContent className="p-6 mt-0 md:-mt-10">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border-4 border-white dark:border-slate-900 grid place-items-center text-3xl font-bold text-white shadow-lg mb-4">
                   {name.charAt(0)}
                 </div>

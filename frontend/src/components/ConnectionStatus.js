@@ -8,23 +8,26 @@ const ConnectionStatus = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        setStatus('checking');
-        setError(null);
-        await apiClient.healthCheck();
-        setStatus('connected');
-      } catch (err) {
-        setStatus('disconnected');
-        setError(err.message);
-      }
-    };
+    // moved to outer scope
+  }, []);
 
+  // Extracted so UI can trigger a retry
+  const checkConnection = async () => {
+    try {
+      setStatus('checking');
+      setError(null);
+      await apiClient.healthCheck();
+      setStatus('connected');
+    } catch (err) {
+      setStatus('disconnected');
+      setError(err?.message || String(err));
+    }
+  };
+
+  // start polling
+  useEffect(() => {
     checkConnection();
-    
-    // Check connection every 30 seconds
     const interval = setInterval(checkConnection, 30000);
-    
     return () => clearInterval(interval);
   }, []);
 
@@ -49,6 +52,14 @@ const ConnectionStatus = () => {
             <div className="font-semibold mb-1">❌ API Connection Failed</div>
             <div className="text-sm opacity-90">
               {error || 'Unable to reach the application API'}
+            </div>
+            <div className="mt-3">
+              <button
+                onClick={checkConnection}
+                className="bg-white text-gray-800 px-3 py-1 rounded-md text-sm"
+              >
+                Retry
+              </button>
             </div>
             <div className="text-xs mt-2 opacity-75">
               Ensure the Next.js dev server is running (default http://localhost:3000) and exposes its /api routes.

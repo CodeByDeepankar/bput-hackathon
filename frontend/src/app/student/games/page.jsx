@@ -17,7 +17,7 @@ export default function GamesHome() {
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-xl font-semibold mb-4 light:text-black flex items-center gap-2"><Gamepad2 className="w-5 h-5" /> {t.nav.games()}</h1>
-        <div className="grid gap-4 md:grid-cols-2">
+  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <AnimatePresence>
             {games.map((g, idx) => (
               <motion.div

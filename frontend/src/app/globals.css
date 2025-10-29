@@ -30,6 +30,40 @@ html, body {
 	font-family: 'CustomAppFont', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* Responsive helper rules - improve global responsiveness */
+img, picture, video, svg {
+	max-width: 100%;
+	height: auto;
+	display: block;
+}
+
+iframe {
+	max-width: 100%;
+}
+
+/* Tables should scroll on small screens */
+.responsive-table {
+	width: 100%;
+	overflow-x: auto;
+}
+
+/* Make container padding smaller on small screens */
+.container {
+	max-width: 1200px;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: 1rem;
+	padding-right: 1rem;
+}
+
+@media (min-width: 768px) {
+	.container { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+
+/* Ensure breakpoints for long words/links */
+.break-words { word-wrap: break-word; word-break: break-word; }
+
+
 /* Ensure Tailwind’s default font uses our custom font globally */
 :root, :host {
 	--font-sans: 'CustomAppFont', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
@@ -49,11 +83,10 @@ html, body {
 	 - IE/Edge: -ms-overflow-style: none
 	 - WebKit (Chrome, Safari): hide via ::-webkit-scrollbar
 	 Applied globally so both axes hide the scrollbar. */
-html, body, * {
+/* Avoid forcing layout-affecting properties globally. Only hide scrollbars where needed. */
+html, body {
 	-ms-overflow-style: none; /* IE and Edge */
 	scrollbar-width: none; /* Firefox */
-	top: 0px !important;
-	
 }
 
 .VIpgJd-ZVi9od-ORHb-OEVmcd{

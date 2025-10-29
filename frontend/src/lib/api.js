@@ -30,18 +30,28 @@ class ApiClient {
         let detail = '';
         try {
           const data = await response.json();
-            detail = data.error || data.message || JSON.stringify(data).slice(0,200);
-        } catch {
-          try { detail = (await response.text()).slice(0,200); } catch {}
+          detail = data?.error || data?.message || JSON.stringify(data).slice(0, 200);
+        } catch (e) {
+          try {
+            detail = (await response.text()).slice(0, 200);
+          } catch (e2) {
+            // ignore
+          }
         }
+
+        // If we couldn't extract a useful body, fall back to statusText or a status string
+        if (!detail) {
+          detail = response.statusText || `Status ${response.status}`;
+        }
+
         if (response.status === 503) {
-          throw new Error('Service unavailable: ' + detail);
+          throw new Error(`Service unavailable (${response.status}): ${detail}`);
         }
         if (response.status >= 500) {
-          throw new Error('Server error: ' + detail);
+          throw new Error(`Server error (${response.status}): ${detail}`);
         }
         if (response.status === 404) {
-          throw new Error('Not found: ' + detail);
+          throw new Error(`Not found (${response.status}): ${detail}`);
         }
         throw new Error(`HTTP ${response.status}: ${detail}`);
       }
