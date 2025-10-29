@@ -130,11 +130,10 @@ export default function Welcome() {
         defer
       />
       <div></div>
-      <section className="relative w-[80vw] m-auto text-center h-150 bg-[#ffff] overflow-hidden flex items-center">
-        <div className="relative z-10 max-w-6xl mx-auto px-4 h-full flex items-center">
-          <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8 h-full">
+      <section className="relative flex items-center justify-center overflow-hidden bg-[#ffff] text-center">
+  <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center gap-10 px-4 py-10 md:grid md:grid-cols-2 md:gap-8 md:py-20">
             {/* Left column: heading, paragraph, CTA */}
-            <div className="text-left flex flex-col justify-center h-full">
+            <div className="flex w-full flex-col items-center text-center md:items-start md:text-left">
               <SignedOut>
                 <motion.div
                   initial="hidden"
@@ -197,9 +196,9 @@ export default function Welcome() {
                   </motion.p>
 
                   {/* CTA: centered and using Shades-like button style */}
-                  <div className="mt-6 flex justify-center md:justify-start">
+                  <div className="mt-6 flex w-full justify-center md:justify-start">
                     <SignInButton>
-                      <button className="hidden md:inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-600 to-indigo-600 px-8 py-4 text-lg font-medium text-white hover:from-sky-700 hover:to-indigo-700 transform transition duration-200 ease-out hover:scale-105 hover:-translate-y-0.5 hover:shadow-xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-300 cursor-pointer">
+                      <button className="inline-flex w-full max-w-xs items-center justify-center rounded-full bg-gradient-to-r from-sky-600 to-indigo-600 px-6 py-3 text-base font-medium text-white transition duration-200 ease-out hover:-translate-y-0.5 hover:scale-105 hover:from-sky-700 hover:to-indigo-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-2 active:scale-95 md:max-w-none md:px-8 md:py-4 md:text-lg">
                         Get Started
                       </button>
                     </SignInButton>
@@ -221,32 +220,33 @@ export default function Welcome() {
             </div>
 
             {/* Right column: mascot animation */}
-            <div className="flex items-center justify-center w-full h-screen">
-              {!showGif ? (
-                <video
-                  ref={videoRef}
-                  src="/home.mp4"
-                  preload="auto"
-                  autoPlay
-                  muted
-                  playsInline
-                  onEnded={() => setShowGif(true)}
-                  className="max-w-[133%] max-h-[90%] object-contain"
-                />
-              ) : (
-                <Image
-                  src="/home.gif"
-                  alt="Home animation"
-                  width={1280}
-                  height={720}
-                  className="max-w-[133%] max-h-[90%] object-contain rounded-md"
-                  priority
-                  unoptimized
-                />
-              )}
+            <div className="flex w-full items-center justify-center md:justify-end">
+              <div className="relative h-64 w-full max-w-md sm:h-80 md:h-auto md:max-w-none">
+                {!showGif ? (
+                  <video
+                    ref={videoRef}
+                    src="/home.mp4"
+                    preload="auto"
+                    autoPlay
+                    muted
+                    playsInline
+                    onEnded={() => setShowGif(true)}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <Image
+                    src="/home.gif"
+                    alt="Home animation"
+                    width={1280}
+                    height={720}
+                    className="h-full w-full object-contain rounded-md"
+                    priority
+                    unoptimized
+                  />
+                )}
+              </div>
             </div>
           </div>
-        </div>
       </section>
     </>
   );

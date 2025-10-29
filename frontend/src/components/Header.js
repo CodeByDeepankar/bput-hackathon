@@ -29,10 +29,11 @@ export default function Header() {
 
   return (
     <header
-      className="p-4 w-[80vw] m-auto flex justify-between items-center"
+      className="w-full"
       style={isLight ? { backgroundColor: "#ffffff", color: "#000000" } : { backgroundColor: "#000000", color: "#f8fafc" }}
     >
-      <div className="flex items-center gap-2">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-2">
         {/* Use public asset with absolute path; fallback to initials if missing */}
         {(() => {
           const [ok] = [true];
@@ -43,20 +44,21 @@ export default function Header() {
           );
         })()}
         <h1 className="text-xl font-bold">GYANARATNA</h1>
-      </div>
-      <nav>
-        {isWelcome ? (
-          <div className="flex items-center gap-3">
-            <ul className="flex space-x-4">
+        </div>
+
+        <nav className="flex w-full items-center justify-end gap-3 sm:w-auto sm:flex-nowrap">
+          {isWelcome ? (
+            <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
+              <ul className="flex flex-wrap items-center gap-3 text-sm">
               <li>
                 <Link href="/contact">Contact</Link>
               </li>
             </ul>
             <ThemeToggle />
-          </div>
-        ) : isStudentShell ? (
+            </div>
+          ) : isStudentShell ? (
           // Replace nav with language toggle + online badge + Clerk profile button on student pages
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
             <OnlineBadge />
             {/* Google Translate dropdown appears in PreHeader */}
             <ThemeToggle />
@@ -68,9 +70,9 @@ export default function Header() {
               <Link href="/sign-in">Sign in</Link>
             </SignedOut>
           </div>
-        ) : isTeacherShell ? (
+          ) : isTeacherShell ? (
           // On teacher routes, remove the default nav links (Home/Student/Teacher/Contact)
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
             <ThemeToggle />
             <PreHeader />
             <SignedIn>
@@ -81,7 +83,7 @@ export default function Header() {
             </SignedOut>
           </div>
         ) : (
-          <ul className="flex space-x-4 items-center">
+          <ul className="flex flex-wrap items-center justify-end gap-3 text-sm">
             <li>
               <Link href="/">Home</Link>
             </li>
@@ -111,7 +113,8 @@ export default function Header() {
             </li>
           </ul>
         )}
-      </nav>
+        </nav>
+      </div>
     </header>
   );
 }
