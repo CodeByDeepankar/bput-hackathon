@@ -6,10 +6,10 @@ import { useEffect, useState, useRef } from "react";
 import {
   SignedOut,
   SignedIn,
+  SignInButton,
   UserButton,
   useUser,
 } from "@clerk/nextjs";
-import { openSignIn } from "@/lib/openSignIn";
 import { useRouter } from "next/navigation";
 import { fetchUserRole } from "@/lib/users";
 import { motion } from "framer-motion";
