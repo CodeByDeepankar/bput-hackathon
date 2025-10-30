@@ -22,7 +22,7 @@ export default function OpenInBrowserPage({ searchParams }) {
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
       <div className="max-w-xl w-full bg-white p-6 rounded-lg shadow">
         <h1 className="text-2xl font-semibold mb-4">Open in your device browser</h1>
-        <p className="mb-4 text-gray-700">We detected you may be using an in-app browser or an embedded webview. Google blocks signing in with some providers from embedded browsers. To continue, open the sign-in flow in your device's normal browser.</p>
+        <p className="mb-4 text-gray-700">We detected you may be using an in-app browser or an embedded webview. Google blocks signing in with some providers from embedded browsers. To continue, open the sign-in flow in your device&apos;s normal browser.</p>
 
         <div className="flex flex-col sm:flex-row gap-3">
           <a
@@ -48,7 +48,7 @@ export default function OpenInBrowserPage({ searchParams }) {
           </button>
         </div>
 
-        <p className="mt-4 text-sm text-gray-600">If this is a native app using a webview (Cordova/Capacitor), the app must open external OAuth flows using the system browser (SFSafariViewController / Custom Tabs). If you control the app, use the platform's browser plugin. If not, open this site in Chrome or Safari and try again.</p>
+        <p className="mt-4 text-sm text-gray-600">If this is a native app using a webview (Cordova/Capacitor), the app must open external OAuth flows using the system browser (SFSafariViewController / Custom Tabs). If you control the app, use the platform&apos;s browser plugin. If not, open this site in Chrome or Safari and try again.</p>
       </div>
     </div>
   );
