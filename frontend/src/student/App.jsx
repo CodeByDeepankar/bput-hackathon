@@ -16,9 +16,7 @@ import { HamburgerMenu } from "./components/hamburger-menu";
 import { Button } from "./components/ui/button";
 import { Card, CardContent } from "./components/ui/card";
 import { Avatar, AvatarFallback } from "./components/ui/avatar";
-import { Badge } from "./components/ui/badge";
-import { Progress } from "./components/ui/progress";
-import { BookOpen, Trophy, Award, User, Home, Gamepad2 } from "lucide-react";
+import { BookOpen, Award, User as UserIcon, Gamepad2, Search as SearchIcon, BarChart3, Users as UsersIcon, Zap } from "lucide-react";
 
 export default function App() { const [currentSection, setCurrentSection] = useState('home');
   const [selectedCourse, setSelectedCourse] = useState('');
@@ -56,7 +54,7 @@ export default function App() { const [currentSection, setCurrentSection] = useS
   }, []);
 
   // XP Animation effect
-  const triggerXpGain = (amount: number) => { setXpGained(amount);
+  const triggerXpGain = (amount) => { setXpGained(amount);
     setShowXpAnimation(true);
     
     // Update user XP
@@ -68,42 +66,40 @@ export default function App() { const [currentSection, setCurrentSection] = useS
       setXpGained(0); }, 2000);
   };
 
-  const navigateToSection = (section: AppSection) => { setCurrentSection(section); };
+  const navigateToSection = (section) => { setCurrentSection(section); };
 
-  const handleCourseSelect = (courseId: string) => { setSelectedCourse(courseId);
+  const handleCourseSelect = (courseId) => { setSelectedCourse(courseId);
     setCurrentSection('lesson'); };
 
   const handleLessonComplete = () => { // Trigger XP gain animation
     triggerXpGain(50);
     setCurrentSection('dashboard'); };
 
-  const handleQuizComplete = (score: number) => { // Calculate XP based on score
+  const handleQuizComplete = (score) => { // Calculate XP based on score
     const xpEarned = Math.round(score * 2); // 2 XP per percentage point
     triggerXpGain(xpEarned);
     console.log('Quiz completed with score:', score);
     setCurrentSection('dashboard'); };
 
   const studentNavigationItems = [
-    // { id: 'home', label: 'Home', icon: HomeIcon },
     { id: 'search', label: 'Search', icon: SearchIcon },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'courses', label: 'Courses', icon: BookOpen },
     { id: 'games', label: 'Games', icon: Gamepad2 },
-    { id: 'leaderboard', label: 'Leaderboard', icon: Users },
+    { id: 'leaderboard', label: 'Leaderboard', icon: UsersIcon },
     { id: 'achievements', label: 'Achievements', icon: Award },
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'profile', label: 'Profile', icon: UserIcon },
   ];
 
   const teacherNavigationItems = [
-    // { id: 'home', label: 'Home', icon: HomeIcon },
     { id: 'search', label: 'Search', icon: SearchIcon },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'courses', label: 'Courses', icon: BookOpen },
-    { id: 'classes', label: 'My Classes', icon: Users },
+    { id: 'classes', label: 'My Classes', icon: UsersIcon },
     { id: 'analytics', label: 'Analytics', icon: Award },
     { id: 'create-assignment', label: 'Assignments', icon: BookOpen },
     { id: 'messages', label: 'Messages', icon: Award },
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'profile', label: 'Profile', icon: UserIcon },
   ];
 
   const navigationItems = userRole === 'student' ? studentNavigationItems : teacherNavigationItems;
@@ -212,9 +208,9 @@ export default function App() { const [currentSection, setCurrentSection] = useS
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
       { /* Compact Top Header */ }
       <header className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap">
           { /* Left Side - Logo */ }
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-white" />
             </div>
@@ -226,7 +222,7 @@ export default function App() { const [currentSection, setCurrentSection] = useS
           </div>
 
           { /* Right Section - Navigation + User */ }
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap sm:gap-3">
             { /* Essential Navigation (Search, Dashboard, Courses) */ }
             <div className="hidden md:flex items-center gap-1">
               { topHeaderItems.map((item) => {
@@ -247,7 +243,7 @@ export default function App() { const [currentSection, setCurrentSection] = useS
             </div>
 
             { /* User Profile */ }
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Avatar className="w-8 h-8">
                 <AvatarFallback className="text-xs">
                   { userRole === 'student' ? studentUser.avatar : teacherUser.avatar }
@@ -272,7 +268,7 @@ export default function App() { const [currentSection, setCurrentSection] = useS
       </header>
 
       { /* Main Content */ }
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto w-full px-3 sm:px-4 py-6">
         { renderContent() }
       </main>
 

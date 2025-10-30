@@ -6,10 +6,10 @@ import { useEffect, useState, useRef } from "react";
 import {
   SignedOut,
   SignedIn,
+  SignInButton,
   UserButton,
   useUser,
 } from "@clerk/nextjs";
-import { openSignIn } from "@/lib/openSignIn";
 import { useRouter } from "next/navigation";
 import { fetchUserRole } from "@/lib/users";
 import { motion } from "framer-motion";
@@ -130,11 +130,11 @@ export default function Welcome() {
         defer
       />
       <div></div>
-      <section className="relative w-full mx-auto text-center h-auto bg-[#ffff] overflow-hidden flex items-center pt-16 sm:pt-12">
+      <section className="relative w-[80vw] m-auto text-center h-150 bg-[#ffff] overflow-hidden flex items-center">
         <div className="relative z-10 max-w-6xl mx-auto px-4 h-full flex items-center">
           <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8 h-full">
             {/* Left column: heading, paragraph, CTA */}
-            <div className="text-left flex flex-col justify-center h-full">
+            <div className="flex w-full flex-col items-center text-center md:items-start md:text-left">
               <SignedOut>
                 <motion.div
                   initial="hidden"
@@ -198,15 +198,11 @@ export default function Welcome() {
 
                   {/* CTA: centered and using Shades-like button style */}
                   <div className="mt-6 flex justify-center md:justify-start">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        openSignIn('/sign-in');
-                      }}
-                      className="w-full sm:w-auto inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-600 to-indigo-600 px-6 md:px-8 py-3 md:py-4 text-base md:text-lg font-medium text-white hover:from-sky-700 hover:to-indigo-700 transform transition duration-200 ease-out hover:scale-105 hover:-translate-y-0.5 hover:shadow-xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-300 cursor-pointer"
-                    >
-                      Get Started
-                    </button>
+                    <SignInButton>
+                      <button className="hidden md:inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-600 to-indigo-600 px-8 py-4 text-lg font-medium text-white hover:from-sky-700 hover:to-indigo-700 transform transition duration-200 ease-out hover:scale-105 hover:-translate-y-0.5 hover:shadow-xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-300 cursor-pointer">
+                        Get Started
+                      </button>
+                    </SignInButton>
                   </div>
                 </motion.div>
               </SignedOut>
@@ -225,7 +221,7 @@ export default function Welcome() {
             </div>
 
             {/* Right column: mascot animation */}
-            <div className="flex items-center justify-center w-full h-auto md:h-screen">
+            <div className="flex items-center justify-center w-full h-screen">
               {!showGif ? (
                 <video
                   ref={videoRef}
