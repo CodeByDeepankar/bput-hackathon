@@ -2,6 +2,7 @@
 import headerStyles from './Header.module.css';
 
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import ClientOnly from './ClientOnly';
 import Link from "next/link";
 import { openSignIn } from '@/lib/openSignIn';
 import { usePathname } from "next/navigation";
@@ -28,10 +29,12 @@ export default function Header() {
   ].some((p) => pathname?.startsWith(p));
   const isTeacherShell = pathname?.startsWith("/teacher");
   const isRoleSelect = pathname === "/role-select";
+  // Reserve modest right padding on mobile for globe control only
+  const headerRightPad = (isStudentShell || isTeacherShell) ? "pr-14 sm:pr-4" : "";
 
   return (
     <header
-      className="w-full max-w-7xl mx-auto px-4 py-3 flex justify-between items-center relative z-50"
+      className={`${headerRightPad} w-full max-w-7xl mx-auto px-4 py-3 flex justify-between items-center relative z-50`}
       style={isLight ? { backgroundColor: "#ffffff", color: "#000000" } : { backgroundColor: "#000000", color: "#f8fafc" }}
     >
       <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
@@ -58,36 +61,41 @@ export default function Header() {
           </div>
         ) : isStudentShell ? (
           // Replace nav with language toggle + online badge + Clerk profile button on student pages
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <OnlineBadge />
-            {/* Google Translate dropdown appears in PreHeader */}
-            <ThemeToggle />
-            <PreHeader />
-            <SignedIn>
-              <div className={headerStyles.profilePicture}>
-                <UserButton afterSignOutUrl="/" />
-              </div>
-            </SignedIn>
-            <SignedOut>
-              <button onClick={(e) => { e.preventDefault(); openSignIn('/sign-in'); }} className="text-sm text-blue-600 hover:underline">Sign in</button>
-            </SignedOut>
-          </div>
+          <ClientOnly fallback={<div className="flex items-center gap-3 flex-shrink-0"><OnlineBadge /><ThemeToggle /><PreHeader /></div>}>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <OnlineBadge />
+              {/* Google Translate dropdown appears in PreHeader */}
+              <ThemeToggle />
+              <PreHeader />
+              <SignedIn>
+                <div className={headerStyles.profilePicture}>
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              </SignedIn>
+              <SignedOut>
+                <button onClick={(e) => { e.preventDefault(); openSignIn('/sign-in'); }} className="text-sm text-blue-600 hover:underline">Sign in</button>
+              </SignedOut>
+            </div>
+          </ClientOnly>
         ) : isTeacherShell ? (
           // On teacher routes, remove the default nav links (Home/Student/Teacher/Contact)
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <ThemeToggle />
-            <PreHeader />
-            <SignedIn>
-              <div className={headerStyles.profilePicture}>
-                <UserButton afterSignOutUrl="/" />
-              </div>
-            </SignedIn>
-            <SignedOut>
-              <button onClick={(e) => { e.preventDefault(); openSignIn('/sign-in'); }} className="text-sm text-blue-600 hover:underline">Sign in</button>
-            </SignedOut>
-          </div>
+          <ClientOnly fallback={<div className="flex items-center gap-3 flex-shrink-0"><ThemeToggle /><PreHeader /></div>}>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <ThemeToggle />
+              <PreHeader />
+              <SignedIn>
+                <div className={headerStyles.profilePicture}>
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              </SignedIn>
+              <SignedOut>
+                <button onClick={(e) => { e.preventDefault(); openSignIn('/sign-in'); }} className="text-sm text-blue-600 hover:underline">Sign in</button>
+              </SignedOut>
+            </div>
+          </ClientOnly>
         ) : (
-          <div className="flex items-center gap-4 flex-shrink-0">
+          <ClientOnly fallback={<div className="flex items-center gap-4 flex-shrink-0"><ThemeToggle /></div>}>
+            <div className="flex items-center gap-4 flex-shrink-0">
             <ul className="hidden md:flex space-x-4 items-center">
               <li>
                 <Link href="/">Home</Link>
@@ -116,6 +124,7 @@ export default function Header() {
               <button onClick={(e) => { e.preventDefault(); openSignIn('/sign-in'); }} className="text-sm text-blue-600 hover:underline">Sign in</button>
             </SignedOut>
           </div>
+        </ClientOnly>
         )}
       </nav>
     </header>

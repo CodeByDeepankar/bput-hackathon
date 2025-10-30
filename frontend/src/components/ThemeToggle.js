@@ -24,11 +24,11 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="px-2 py-1 border rounded inline-flex items-center gap-2 text-sm"
+      className="border rounded inline-flex items-center text-sm px-1.5 py-1 gap-1.5 sm:px-2 sm:py-1 sm:gap-2"
       title={isDark ? "Switch to light" : "Switch to dark"}
     >
       {isDark ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
-      <span>{isDark ? "Light" : "Dark"}</span>
+      <span className="hidden sm:inline">{isDark ? "Light" : "Dark"}</span>
     </button>
   );
 }
