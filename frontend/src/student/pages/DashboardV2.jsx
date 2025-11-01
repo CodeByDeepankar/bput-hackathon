@@ -1,17 +1,22 @@
 import { BookOpen, Sparkles, Star, Gift, Trophy, Zap, Target, Brain, Send, TrendingUp, Clock, Award, Database, Layers, Cpu, HardDrive } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { useUser } from '@clerk/nextjs';
 import { useI18n } from '@/i18n/useI18n';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchUserRole } from '@/lib/users';
+import { useSchoolContent } from '@/hooks/useApi';
 import SkillTrackCard from '../components/SkillTrackCard';
 
 export default function DashboardV2({ user = {} }) {
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser, isLoaded: userLoaded } = useUser();
   const name = clerkUser?.fullName || clerkUser?.firstName || user.name || 'Student';
   const { t } = useI18n();
   const [gyanBotQuery, setGyanBotQuery] = useState('');
+  const [schoolId, setSchoolId] = useState(null);
+  const [roleError, setRoleError] = useState(null);
 
   // Get user metadata from Clerk
   const userYear = clerkUser?.publicMetadata?.year || '3rd Year';
@@ -51,6 +56,51 @@ export default function DashboardV2({ user = {} }) {
       isRecommended: false,
     },
   ];
+
+  useEffect(() => {
+    if (!userLoaded) return;
+    if (!clerkUser?.id) {
+      setSchoolId(null);
+      setRoleError(null);
+      return;
+    }
+    let active = true;
+    fetchUserRole(clerkUser.id)
+      .then((doc) => {
+        if (!active) return;
+        const school = doc?.schoolId || doc?.school_id || null;
+        setSchoolId(school);
+        setRoleError(null);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setSchoolId(null);
+        setRoleError(error?.message || 'Unable to load shared content');
+      });
+    return () => {
+      active = false;
+    };
+  }, [userLoaded, clerkUser?.id]);
+
+  const {
+    content: schoolContent,
+    loading: contentLoading,
+    error: contentError,
+  } = useSchoolContent(schoolId, { limit: 8 });
+
+  const latestContent = useMemo(() => {
+    if (!Array.isArray(schoolContent)) return [];
+    return schoolContent.slice(0, 4);
+  }, [schoolContent]);
+
+  const formatContentDate = (value) => {
+    if (!value) return '';
+    try {
+      return new Date(value).toLocaleString();
+    } catch (error) {
+      return String(value);
+    }
+  };
 
   return (
     <div className="min-h-screen pb-10 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
@@ -115,6 +165,100 @@ export default function DashboardV2({ user = {} }) {
                   <Zap className="w-4 h-4 text-yellow-300" />
                   <span>AI Confidence: 92% match for your learning style</span>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Teacher Shared Content */}
+            <Card className="shadow-lg border-2 border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-white">Teacher Shared Resources</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">Latest quizzes, videos, and materials from your school</p>
+                  </div>
+                  <Badge className="bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-200">School feed</Badge>
+                </div>
+
+                {roleError && (
+                  <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4 dark:bg-red-900/20 dark:border-red-900/40 dark:text-red-300">
+                    {roleError}
+                  </div>
+                )}
+
+                {!roleError && !schoolId && (
+                  <div className="text-sm text-slate-600 bg-slate-100 border border-slate-200 rounded-lg p-4 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
+                    Your account is not linked to a school yet. Ask your teacher to assign you to a class to see shared resources.
+                  </div>
+                )}
+
+                {schoolId && !roleError && (
+                  <div className="space-y-4">
+                    {contentError && (
+                      <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4 dark:bg-red-900/20 dark:border-red-900/40 dark:text-red-300">
+                        {contentError}
+                      </div>
+                    )}
+
+                    {contentLoading && !latestContent.length ? (
+                      <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-300">Loading resources...</div>
+                    ) : latestContent.length ? (
+                      latestContent.map((item) => {
+                        const preview = item.body || item.description || '';
+                        const showPreview = preview ? preview.slice(0, 220) + (preview.length > 220 ? '...' : '') : '';
+                        return (
+                          <div key={item.id} className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-white/60 dark:bg-slate-800/80 shadow-sm space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{item.title}</h3>
+                                  <Badge className="bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-200 uppercase">{item.type}</Badge>
+                                </div>
+                                {showPreview && (
+                                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-wrap">{showPreview}</p>
+                                )}
+                                {Array.isArray(item.tags) && item.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {item.tags.slice(0, 4).map((tag) => (
+                                      <span key={tag} className="text-xs px-2 py-1 bg-slate-200/80 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 rounded-full border border-slate-300/70 dark:border-slate-600/70">
+                                        #{tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatContentDate(item.createdAt)}</div>
+                            </div>
+
+                            {item.type === 'video' && item.embedHtml && (
+                              <div
+                                className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700"
+                                dangerouslySetInnerHTML={{ __html: item.embedHtml }}
+                              />
+                            )}
+
+                            {item.url && (
+                              <div className="flex flex-wrap gap-3">
+                                <Button
+                                  size="sm"
+                                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                                  asChild
+                                >
+                                  <a href={item.url} target="_blank" rel="noreferrer">
+                                    Open resource
+                                  </a>
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-300">
+                        Your teachers have not shared new resources yet.
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

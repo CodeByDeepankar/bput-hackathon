@@ -87,9 +87,17 @@ class ApiClient {
   // SUBJECTS API
   // ===========================================
 
-  async getSubjects(classFilter = null) {
-    const params = classFilter ? `?class=${encodeURIComponent(classFilter)}` : '';
-    return this.request(`/subjects${params}`);
+  async getSubjects(filter = {}) {
+    const params = new URLSearchParams();
+    if (typeof filter === 'string') {
+      params.append('class', filter);
+    } else if (filter && typeof filter === 'object') {
+      if (filter.classFilter) params.append('class', filter.classFilter);
+      if (filter.class) params.append('class', filter.class);
+      if (filter.schoolId) params.append('schoolId', filter.schoolId);
+    }
+    const queryString = params.toString();
+    return this.request(`/subjects${queryString ? '?' + queryString : ''}`);
   }
 
   async createSubject(subjectData) {
@@ -121,6 +129,7 @@ class ApiClient {
     const params = new URLSearchParams();
     if (filters.subjectId) params.append('subjectId', filters.subjectId);
     if (filters.createdBy) params.append('createdBy', filters.createdBy);
+    if (filters.schoolId) params.append('schoolId', filters.schoolId);
     
     const queryString = params.toString();
     return this.request(`/quizzes${queryString ? '?' + queryString : ''}`);
@@ -135,6 +144,37 @@ class ApiClient {
     return this.request('/quizzes', {
       method: 'POST',
       body: quizData,
+    });
+  }
+
+  async getQuizQuestions(params = {}) {
+    const query = new URLSearchParams();
+    if (params.quizId) query.append('quizId', params.quizId);
+    if (params.schoolId) query.append('schoolId', params.schoolId);
+    if (params.includeAnswers === true) query.append('includeAnswers', 'true');
+    if (params.limit) query.append('limit', String(params.limit));
+    const queryString = query.toString();
+    return this.request(`/questions${queryString ? '?' + queryString : ''}`);
+  }
+
+  async createQuestion(questionData) {
+    return this.request('/questions', {
+      method: 'POST',
+      body: questionData,
+    });
+  }
+
+  async updateQuestion(id, questionData) {
+    return this.request(`/questions/${id}`, {
+      method: 'PUT',
+      body: questionData,
+    });
+  }
+
+  async deleteQuestion(id, deletedBy) {
+    const params = new URLSearchParams({ deletedBy });
+    return this.request(`/questions/${id}?${params.toString()}`, {
+      method: 'DELETE',
     });
   }
 
@@ -261,6 +301,48 @@ class ApiClient {
   async getSchoolProgress(schoolId) {
     return this.request(`/progress/school/${schoolId}`);
   }
+
+  // ===========================================
+  // SCHOOL CONTENT API
+  // ===========================================
+
+  async getSchoolContent(schoolId, options = {}) {
+    if (!schoolId) {
+      throw new Error('schoolId is required to load content');
+    }
+    const params = new URLSearchParams({ schoolId });
+    if (options.type) {
+      params.append('type', options.type);
+    }
+    if (options.limit) {
+      params.append('limit', String(options.limit));
+    }
+    const queryString = params.toString();
+    return this.request(`/content?${queryString}`);
+  }
+
+  async createContentItem(contentData) {
+    return this.request('/content', {
+      method: 'POST',
+      body: contentData,
+    });
+  }
+
+  async updateContentItem(id, contentData) {
+    return this.request(`/content/${id}`, {
+      method: 'PUT',
+      body: contentData,
+    });
+  }
+
+  async deleteContentItem(id, deletedBy) {
+    const params = new URLSearchParams();
+    if (deletedBy) params.append('deletedBy', deletedBy);
+    const suffix = params.toString();
+    return this.request(`/content/${id}${suffix ? `?${suffix}` : ''}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 // Create singleton instance
@@ -276,6 +358,10 @@ export const deleteSubject = apiClient.deleteSubject.bind(apiClient);
 export const getQuizzes = apiClient.getQuizzes.bind(apiClient);
 export const getQuiz = apiClient.getQuiz.bind(apiClient);
 export const createQuiz = apiClient.createQuiz.bind(apiClient);
+export const getQuizQuestions = apiClient.getQuizQuestions.bind(apiClient);
+export const createQuestion = apiClient.createQuestion.bind(apiClient);
+export const updateQuestion = apiClient.updateQuestion.bind(apiClient);
+export const deleteQuestion = apiClient.deleteQuestion.bind(apiClient);
 export const submitQuizResponse = apiClient.submitQuizResponse.bind(apiClient);
 export const getStudentResponses = apiClient.getStudentResponses.bind(apiClient);
 export const getStreak = apiClient.getStreak.bind(apiClient);
@@ -290,3 +376,7 @@ export const setupViews = apiClient.setupViews.bind(apiClient);
 export const getStudentsBySchool = apiClient.getStudentsBySchool.bind(apiClient);
 export const getStudentProgress = apiClient.getStudentProgress.bind(apiClient);
 export const getSchoolProgress = apiClient.getSchoolProgress.bind(apiClient);
+export const getSchoolContent = apiClient.getSchoolContent.bind(apiClient);
+export const createContentItem = apiClient.createContentItem.bind(apiClient);
+export const updateContentItem = apiClient.updateContentItem.bind(apiClient);
+export const deleteContentItem = apiClient.deleteContentItem.bind(apiClient);
