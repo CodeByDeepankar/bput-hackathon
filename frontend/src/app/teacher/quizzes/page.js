@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/nextjs";
 import { fetchUserRole } from "@/lib/users";
 import { useSubjects, useQuizzes, useQuizQuestions } from "@/hooks/useApi";
+import { BRANCH_SUBJECTS, getSubjectsForBranch, formatBranchName } from "@/student/data/branchSubjects";
 import { Card, CardContent, CardHeader, CardTitle } from "@teacher/components/ui/card";
 import { Input } from "@teacher/components/ui/input";
 import { Textarea } from "@teacher/components/ui/textarea";
@@ -18,9 +19,12 @@ const difficultyOptions = [
   { value: "hard", label: "Hard" },
 ];
 
+const selectTriggerClass = "bg-slate-50 border border-slate-200 focus:border-violet-300 focus:ring-2 focus:ring-violet-100 text-slate-800";
+const selectContentClass = "bg-white border border-slate-200 shadow-lg";
+
 const createDefaultQuizForm = () => ({
   title: "",
-  subjectId: "",
+  subjectOption: "",
   difficulty: "medium",
   timeLimit: 300,
   description: "",
@@ -36,6 +40,19 @@ const createDefaultQuestionForm = () => ({
   topic: "",
   subTopic: "",
 });
+
+function parseClassValue(value) {
+  if (!value) return null;
+  const match = String(value).match(/^([A-Za-z]+)[-_\s]*Sem(?:ester)?\s*(\d{1,2})$/i);
+  if (!match) return null;
+  const branchKey = match[1].toUpperCase();
+  const semesterNumber = Number(match[2]);
+  if (!Number.isFinite(semesterNumber)) return null;
+  return {
+    branchKey,
+    semester: semesterNumber,
+  };
+}
 
 function QuizManager() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -53,6 +70,49 @@ function QuizManager() {
   const [questionMessage, setQuestionMessage] = useState(null);
   const [questionError, setQuestionError] = useState(null);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
+  const [branchSelection, setBranchSelection] = useState("CSE");
+  const [semesterSelection, setSemesterSelection] = useState("1");
+
+  const branchOptions = useMemo(() => {
+    const base = Object.keys(BRANCH_SUBJECTS).map((key) => ({
+      value: key,
+      label: formatBranchName(key),
+    }));
+
+    if (branchSelection && !base.some((option) => option.value.toUpperCase() === branchSelection.toUpperCase())) {
+      base.push({ value: branchSelection, label: formatBranchName(branchSelection) });
+    }
+
+    return base.sort((a, b) => a.label.localeCompare(b.label));
+  }, [branchSelection]);
+
+  const semesterOptions = useMemo(
+    () => Array.from({ length: 8 }, (_, index) => ({
+      value: String(index + 1),
+      label: `Semester ${index + 1}`,
+    })),
+    []
+  );
+
+  const branchKey = useMemo(
+    () => String(branchSelection || "CSE").toUpperCase(),
+    [branchSelection]
+  );
+
+  const branchDisplay = useMemo(
+    () => formatBranchName(branchSelection || "CSE"),
+    [branchSelection]
+  );
+
+  const semesterNumber = useMemo(() => {
+    const parsed = Number(semesterSelection);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }, [semesterSelection]);
+
+  const classLabel = useMemo(
+    () => `${branchDisplay}-Sem${semesterNumber}`,
+    [branchDisplay, semesterNumber]
+  );
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -86,11 +146,83 @@ function QuizManager() {
   const schoolId = roleDoc?.schoolId || roleDoc?.school_id || null;
   const role = typeof roleDoc === "string" ? roleDoc : roleDoc?.role;
 
+  useEffect(() => {
+    if (!roleDoc?.class) return;
+    const parsed = parseClassValue(roleDoc.class);
+    if (parsed?.branchKey) {
+      setBranchSelection(parsed.branchKey);
+    }
+    if (parsed?.semester) {
+      setSemesterSelection(String(parsed.semester));
+    }
+  }, [roleDoc?.class]);
+
   const {
     subjects,
     loading: subjectsLoading,
     error: subjectsError,
-  } = useSubjects(schoolId ? { schoolId } : {});
+    fetchSubjects: refreshSubjects,
+    createSubject: createSubjectRecord,
+  } = useSubjects(
+    schoolId
+      ? { schoolId, enabled: true }
+      : { enabled: false }
+  );
+
+  const {
+    subjectOptions,
+    fallbackSubjectMeta,
+    usingFallbackSubjects,
+  } = useMemo(() => {
+    if (!Array.isArray(subjects) || !subjects.length) {
+      const fallbackList = getSubjectsForBranch(branchKey, semesterNumber) || [];
+      const fallbackMeta = new Map();
+      const fallbackOptions = fallbackList.map((item) => {
+        const value = `new::${branchKey}::${semesterNumber}::${item.name}`;
+        fallbackMeta.set(value, { name: item.name, summary: item.summary || "" });
+        return {
+          value,
+          label: item.name,
+          isExisting: false,
+        };
+      });
+      fallbackOptions.sort((a, b) => a.label.localeCompare(b.label));
+      return {
+        subjectOptions: fallbackOptions,
+        fallbackSubjectMeta: fallbackMeta,
+        usingFallbackSubjects: fallbackOptions.length > 0,
+      };
+    }
+
+    const scopedSubjects = subjects.filter((subject) => subject.class === classLabel);
+    const existingNames = new Set(scopedSubjects.map((subject) => subject.name));
+    const options = scopedSubjects.map((subject) => ({
+      value: subject.id,
+      label: subject.name,
+      isExisting: true,
+    }));
+
+    const fallbackMeta = new Map();
+    const fallbackList = getSubjectsForBranch(branchKey, semesterNumber) || [];
+    fallbackList.forEach((item) => {
+      if (existingNames.has(item.name)) return;
+      const value = `new::${branchKey}::${semesterNumber}::${item.name}`;
+      fallbackMeta.set(value, { name: item.name, summary: item.summary || "" });
+      options.push({
+        value,
+        label: item.name,
+        isExisting: false,
+      });
+    });
+
+    options.sort((a, b) => a.label.localeCompare(b.label));
+
+    return {
+      subjectOptions: options,
+      fallbackSubjectMeta: fallbackMeta,
+      usingFallbackSubjects: options.some((option) => !option.isExisting),
+    };
+  }, [subjects, branchKey, semesterNumber, classLabel]);
 
   const subjectsById = useMemo(() => {
     const map = new Map();
@@ -99,6 +231,10 @@ function QuizManager() {
     });
     return map;
   }, [subjects]);
+
+  useEffect(() => {
+    setQuizForm((prev) => ({ ...prev, subjectOption: "" }));
+  }, [branchKey, semesterNumber]);
 
   const {
     quizzes,
@@ -135,8 +271,14 @@ function QuizManager() {
   const handleCreateQuiz = async (event) => {
     event.preventDefault();
     if (!user?.id) return;
-    if (!quizForm.title.trim() || !quizForm.subjectId) {
+    if (!quizForm.title.trim() || !quizForm.subjectOption) {
       setQuizError("Title and subject are required");
+      return;
+    }
+
+    const selectedSubjectOption = subjectOptions.find((option) => option.value === quizForm.subjectOption);
+    if (!selectedSubjectOption) {
+      setQuizError("Select a subject");
       return;
     }
 
@@ -144,8 +286,30 @@ function QuizManager() {
       setQuizSubmitting(true);
       setQuizError(null);
       setQuizMessage(null);
+
+      let resolvedSubjectId = selectedSubjectOption.isExisting ? selectedSubjectOption.value : null;
+
+      if (!resolvedSubjectId) {
+        const pendingMeta = fallbackSubjectMeta.get(selectedSubjectOption.value) || {
+          name: selectedSubjectOption.label,
+          summary: "",
+        };
+        const createdSubject = await createSubjectRecord({
+          name: pendingMeta.name,
+          class: classLabel,
+          description: pendingMeta.summary,
+          createdBy: user.id,
+        });
+        resolvedSubjectId = createdSubject?.id || createdSubject?.subject?.id;
+        if (!resolvedSubjectId) {
+          throw new Error("Unable to prepare subject for this quiz");
+        }
+        await refreshSubjects();
+        setQuizForm((prev) => ({ ...prev, subjectOption: resolvedSubjectId }));
+      }
+
       const payload = {
-        subjectId: quizForm.subjectId,
+        subjectId: resolvedSubjectId,
         title: quizForm.title.trim(),
         description: quizForm.description.trim() || null,
         difficulty: quizForm.difficulty,
@@ -256,7 +420,7 @@ function QuizManager() {
   }
 
   if (roleLoading) {
-    return <div className="max-w-6xl mx-auto text-white/90">Loading teacher profile...</div>;
+    return <div className="max-w-6xl mx-auto text-slate-600">Loading teacher profile...</div>;
   }
 
   if (roleError) {
@@ -293,92 +457,138 @@ function QuizManager() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="text-white/90 font-semibold text-2xl">Quizzes</div>
+    <div className="min-h-screen bg-slate-100/80 py-10">
+      <div className="max-w-6xl mx-auto space-y-6 px-4 lg:px-0">
+        <div className="text-slate-800 font-semibold text-2xl">Quizzes</div>
 
-      <Card className="bg-white/95 border-slate-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-slate-900 text-lg flex items-center gap-2">
-            <PlusCircle className="w-5 h-5 text-violet-600" />
-            Create new quiz
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={handleCreateQuiz}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Quiz title</label>
-                <Input
-                  value={quizForm.title}
-                  onChange={(event) => handleQuizFieldChange("title", event.target.value)}
-                  placeholder="e.g. Algebra fundamentals"
-                  className="bg-white"
-                  required
-                />
+        <Card className="bg-white/95 border-slate-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-slate-900 text-lg flex items-center gap-2">
+              <PlusCircle className="w-5 h-5 text-violet-600" />
+              Create new quiz
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={handleCreateQuiz}>
+              <div className="grid grid-cols-1 gap-4 items-end md:grid-cols-2 xl:grid-cols-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Quiz title</label>
+                  <Input
+                    value={quizForm.title}
+                    onChange={(event) => handleQuizFieldChange("title", event.target.value)}
+                    placeholder="e.g. Algebra fundamentals"
+                    className="bg-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Branch</label>
+                  <Select value={branchSelection} onValueChange={setBranchSelection}>
+                    <SelectTrigger className={selectTriggerClass}>
+                      <SelectValue placeholder="Select branch" />
+                    </SelectTrigger>
+                    <SelectContent className={selectContentClass}>
+                      {branchOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Semester</label>
+                  <Select value={semesterSelection} onValueChange={setSemesterSelection}>
+                    <SelectTrigger className={selectTriggerClass}>
+                      <SelectValue placeholder="Select semester" />
+                    </SelectTrigger>
+                    <SelectContent className={selectContentClass}>
+                      {semesterOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="md:col-span-2 xl:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
+                  <Select
+                    value={quizForm.subjectOption}
+                    onValueChange={(value) => handleQuizFieldChange("subjectOption", value)}
+                    disabled={subjectOptions.length === 0 && !subjectsLoading}
+                  >
+                    <SelectTrigger className={selectTriggerClass}>
+                      <SelectValue
+                        placeholder={
+                          subjectsLoading
+                            ? "Loading subjects..."
+                            : subjectOptions.length
+                              ? "Select subject"
+                              : "No subjects available"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className={selectContentClass}>
+                      {subjectOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                          {!option.isExisting ? <span className="ml-2 text-xs text-slate-500">(new)</span> : null}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {usingFallbackSubjects && (
+                    <div className="mt-2 text-xs text-slate-500">
+                      Subjects marked as new will be added to your school automatically before the quiz is saved.
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
-                <Select
-                  value={quizForm.subjectId}
-                  onValueChange={(value) => handleQuizFieldChange("subjectId", value)}
-                >
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder={subjectsLoading ? "Loading subjects..." : "Select subject"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map((subject) => (
-                      <SelectItem key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            {subjectsError && <div className="text-sm text-red-600">{subjectsError}</div>}
+              {subjectsError && <div className="text-sm text-red-600">{subjectsError}</div>}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty</label>
-                <Select
-                  value={quizForm.difficulty}
-                  onValueChange={(value) => handleQuizFieldChange("difficulty", value)}
-                >
-                  <SelectTrigger className="bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {difficultyOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 gap-4 items-end md:grid-cols-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty</label>
+                  <Select
+                    value={quizForm.difficulty}
+                    onValueChange={(value) => handleQuizFieldChange("difficulty", value)}
+                  >
+                    <SelectTrigger className={selectTriggerClass}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className={selectContentClass}>
+                      {difficultyOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Time limit (seconds)</label>
+                  <Input
+                    type="number"
+                    min={30}
+                    step={30}
+                    value={quizForm.timeLimit}
+                    onChange={(event) => handleQuizFieldChange("timeLimit", event.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="flex items-center gap-2 md:justify-end">
+                  <input
+                    id="isBank"
+                    type="checkbox"
+                    checked={quizForm.isBank}
+                    onChange={(event) => handleQuizFieldChange("isBank", event.target.checked)}
+                    className="h-4 w-4 border-slate-300"
+                  />
+                  <label htmlFor="isBank" className="text-sm text-slate-700">Mark as question bank</label>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Time limit (seconds)</label>
-                <Input
-                  type="number"
-                  min={30}
-                  step={30}
-                  value={quizForm.timeLimit}
-                  onChange={(event) => handleQuizFieldChange("timeLimit", event.target.value)}
-                  className="bg-white"
-                />
-              </div>
-              <div className="flex items-center gap-2 mt-6">
-                <input
-                  id="isBank"
-                  type="checkbox"
-                  checked={quizForm.isBank}
-                  onChange={(event) => handleQuizFieldChange("isBank", event.target.checked)}
-                  className="h-4 w-4 border-slate-300"
-                />
-                <label htmlFor="isBank" className="text-sm text-slate-700">Mark as question bank</label>
-              </div>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
@@ -445,8 +655,8 @@ function QuizManager() {
         </CardContent>
       </Card>
 
-      {selectedQuiz && (
-        <Card className="bg-white/95 border-slate-200 shadow-sm">
+        {selectedQuiz && (
+          <Card className="bg-white/95 border-slate-200 shadow-sm">
           <CardHeader>
             <CardTitle className="text-slate-900 text-lg">Questions for {selectedQuiz.title}</CardTitle>
           </CardHeader>
@@ -495,10 +705,10 @@ function QuizManager() {
                     value={questionForm.difficulty}
                     onValueChange={(value) => setQuestionForm((prev) => ({ ...prev, difficulty: value }))}
                   >
-                    <SelectTrigger className="bg-white">
+                    <SelectTrigger className={selectTriggerClass}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className={selectContentClass}>
                       {difficultyOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -626,7 +836,8 @@ function QuizManager() {
             )}
           </CardContent>
         </Card>
-      )}
+        )}
+      </div>
     </div>
   );
 }
