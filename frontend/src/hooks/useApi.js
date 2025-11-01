@@ -3,14 +3,21 @@ import apiClient from '@/lib/api';
 
 // Custom hook for subjects data
 export function useSubjects(options = {}) {
+  const normalized = typeof options === 'string' ? { classFilter: options } : options || {};
+  const { classFilter = null, schoolId = null, enabled = true } = normalized;
+
   const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(enabled));
   const [error, setError] = useState(null);
 
-  const normalized = typeof options === 'string' ? { classFilter: options } : options || {};
-  const { classFilter = null, schoolId = null } = normalized;
-
   const fetchSubjects = useCallback(async () => {
+    if (!enabled) {
+      setSubjects([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -24,7 +31,7 @@ export function useSubjects(options = {}) {
     } finally {
       setLoading(false);
     }
-  }, [classFilter, schoolId]);
+  }, [classFilter, schoolId, enabled]);
 
   useEffect(() => {
     fetchSubjects();
