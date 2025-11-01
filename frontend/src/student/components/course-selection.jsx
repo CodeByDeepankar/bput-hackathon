@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Card, CardContent } from "./ui/card";
 import { SubHeader } from "./sub-header";
@@ -56,7 +56,36 @@ function normalizeSemester(value) {
 }
 
 export default function CourseSelection() {
-	const { t } = useI18n();
+		const { t } = useI18n();
+		const translate = useCallback(
+			(path, fallback) => {
+				if (!path) return fallback;
+				const segments = path.split(".");
+				let cursor = t;
+
+				for (const segment of segments) {
+					if (cursor == null) break;
+					cursor = cursor[segment];
+				}
+
+				if (typeof cursor === "function") {
+					try {
+						const value = cursor();
+						return value == null ? fallback : value;
+					} catch (error) {
+						console.warn("translate() failed for", path, error);
+						return fallback;
+					}
+				}
+
+				if (cursor != null) {
+					return String(cursor);
+				}
+
+				return fallback;
+			},
+			[t]
+		);
 	const { user: clerkUser, isLoaded } = useUser();
 	const [roleDoc, setRoleDoc] = useState(null);
 	const [roleError, setRoleError] = useState(null);
@@ -128,10 +157,10 @@ export default function CourseSelection() {
 		return 1;
 	}, [parsedClass?.semester, metadataSemester]);
 
-	const semesterDisplay = useMemo(
-		() => `${t("student.courses.semesterLabel", "Semester")} ${semesterNumber}`,
-		[t, semesterNumber]
-	);
+		const semesterDisplay = useMemo(
+			() => `${translate("student.courses.semesterLabel", "Semester")} ${semesterNumber}`,
+			[translate, semesterNumber]
+		);
 
 	const classFilter = useMemo(
 		() => `${branchForClass}-Sem${semesterNumber}`,
@@ -192,17 +221,17 @@ export default function CourseSelection() {
 		});
 	}, [subjectLineup]);
 
-	const headingLabel = t("student.courses.subjectTracks", "My Engineering Subject Tracks");
-	const branchLabel = t("student.courses.branchLabel", "Branch");
-	const loadingLabel = t("student.courses.loading", "Loading personalized subjects...");
-	const fallbackNotice = t(
-		"student.courses.fallbackNotice",
-		"Showing standard curriculum preview until your teacher publishes subjects."
-	);
-	const emptyStateLabel = t(
-		"student.courses.empty",
-		"Subjects will appear here once your teacher assigns them."
-	);
+		const headingLabel = translate("student.courses.subjectTracks", "My Engineering Subject Tracks");
+		const branchLabel = translate("student.courses.branchLabel", "Branch");
+		const loadingLabel = translate("student.courses.loading", "Loading personalized subjects...");
+		const fallbackNotice = translate(
+			"student.courses.fallbackNotice",
+			"Showing standard curriculum preview until your teacher publishes subjects."
+		);
+		const emptyStateLabel = translate(
+			"student.courses.empty",
+			"Subjects will appear here once your teacher assigns them."
+		);
 
 	return (
 		<div className="space-y-4">
