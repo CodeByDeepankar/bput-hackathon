@@ -39,6 +39,11 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Adventure page specific variables (used by Adventures.module.css) */
+  --adventure-bg: #0f1724;
+  --adventure-card: #0b1220;
+  --adventure-muted: #94a3b8;
+  --adventure-accent: linear-gradient(90deg,#7c3aed,#06b6d4);
 }
 
 .dark {
@@ -76,6 +81,11 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+  /* Adventure page theme overrides for dark mode */
+  --adventure-bg: #0f1724;
+  --adventure-card: #0b1220;
+  --adventure-muted: #94a3b8;
+  --adventure-accent: linear-gradient(90deg,#7c3aed,#06b6d4);
 }
 
 @theme inline {

@@ -35,12 +35,32 @@ export default function RoleSelectPage() {
     if (!user) return;
     setSaving(true);
     try {
-      await saveUserRole({ 
-        userId: user.id, 
-        role, 
-        name, 
-        schoolId: registrationNumber, 
-        class: role === "student" ? `${branch}-Sem${semester}` : undefined 
+      // Update Clerk publicMetadata so UI that reads clerkUser.publicMetadata updates immediately
+      if (role === "student") {
+        try {
+          const semNum = Number(semester);
+          const yearNumber = Math.max(1, Math.ceil(semNum / 2));
+          const suffix = (n) => {
+            if (n % 10 === 1 && n % 100 !== 11) return 'st';
+            if (n % 10 === 2 && n % 100 !== 12) return 'nd';
+            if (n % 10 === 3 && n % 100 !== 13) return 'rd';
+            return 'th';
+          };
+          const yearLabel = `${yearNumber}${suffix(yearNumber)} Year`;
+          // Clerk user update (client-side) to set publicMetadata.branch/year
+          await user.update({ publicMetadata: { ...(user.publicMetadata || {}), branch, year: yearLabel } });
+        } catch (e) {
+          // non-fatal: still proceed to save role in our DB
+          console.warn('Failed to update Clerk publicMetadata', e);
+        }
+      }
+
+      await saveUserRole({
+        userId: user.id,
+        role,
+        name,
+        schoolId: registrationNumber,
+        class: role === "student" ? `${branch}-Sem${semester}` : undefined,
       });
       router.replace(role === "student" ? "/student" : "/teacher");
     } catch (e) {

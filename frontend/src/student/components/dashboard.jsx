@@ -7,12 +7,11 @@ import { BookOpen, Award, TrendingUp, Calendar, Star, Flame, Users, Target } fro
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 export function Dashboard({ user, onNavigate }) { const progressPercentage = (user.xp / user.xpToNextLevel) * 100;
-
-  // Today's Challenge
+ 
   const todaysChallenge = {
     title: "Math Master", description: "Complete 3 math lessons", progress: user.dailyGoalProgress || 2, target: user.dailyGoalTarget || 3, reward: 100, icon: "🧮" };
 
-  // Next level rewards
+   
   const nextLevelRewards = [
     { type: "Badge", name: "Knowledge Seeker", icon: "🏆" },
     { type: "XP Boost", name: "2x XP for 1 hour", icon: "⚡" },
@@ -33,7 +32,7 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
 
   return (
     <div className="space-y-6">
-      { /* SubHeader with Dashboard-specific info */ }
+      
       <SubHeader 
         showStreak={ true }
         showChallenge={ true }
@@ -42,8 +41,7 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
         todaysChallenge={ todaysChallenge }
         nextLevelRewards={ nextLevelRewards }
       />
-
-      { /* Welcome Header */ }
+ 
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white">
         <div className="relative z-10">
           <h1 className="text-2xl mb-2">Welcome back, { user.name }!</h1>
@@ -52,9 +50,9 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
         <div className="absolute right-4 top-4 opacity-20">
           <BookOpen size={ 64 } />
         </div>
-      </div>
+  </div>
 
-      { /* Stats Grid */ }
+  { /* Stats Grid */ }
   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardContent className="p-4 text-center">
@@ -97,7 +95,7 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
         </Card>
       </div>
 
-      { /* Progress Section */ }
+       
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -143,8 +141,7 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
             </div>
           </CardContent>
         </Card>
-
-        { /* Daily Goals */ }
+ 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -175,8 +172,7 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
           </CardContent>
         </Card>
       </div>
-
-      { /* Quick Actions */ }
+ 
       <Card>
         <CardHeader>
           <CardTitle>Continue Learning</CardTitle>

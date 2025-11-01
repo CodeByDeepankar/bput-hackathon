@@ -62,7 +62,9 @@ const ConnectionStatus = () => {
               </button>
             </div>
             <div className="text-xs mt-2 opacity-75">
-              Ensure the Next.js dev server is running (default http://localhost:3000) and exposes its /api routes.
+              Tried: <span className="font-mono">{apiClient?.baseURL || 'unknown'}</span>
+              <br />
+              Ensure the backend or Next.js dev server is running (default http://localhost:3000) and exposes its /api routes.
             </div>
           </div>
         )}

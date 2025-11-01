@@ -44,25 +44,27 @@ class ApiClient {
           detail = response.statusText || `Status ${response.status}`;
         }
 
+        // Include the full request url in error messages to help debugging
+        const urlInfo = ` [url: ${url}]`;
         if (response.status === 503) {
-          throw new Error(`Service unavailable (${response.status}): ${detail}`);
+          throw new Error(`Service unavailable (${response.status}): ${detail}${urlInfo}`);
         }
         if (response.status >= 500) {
-          throw new Error(`Server error (${response.status}): ${detail}`);
+          throw new Error(`Server error (${response.status}): ${detail}${urlInfo}`);
         }
         if (response.status === 404) {
-          throw new Error(`Not found (${response.status}): ${detail}`);
+          throw new Error(`Not found (${response.status}): ${detail}${urlInfo}`);
         }
-        throw new Error(`HTTP ${response.status}: ${detail}`);
+        throw new Error(`HTTP ${response.status}: ${detail}${urlInfo}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error(`API request failed: ${endpoint}`, error);
+  console.error(`API request failed: ${endpoint} (url: ${url})`, error);
       
       // Handle network errors (API not reachable)
       if (error.message === 'Failed to fetch' || error.message.includes('fetch') || error.code === 'ECONNREFUSED') {
-        throw new Error('API is not reachable. Ensure the Next.js server is running and exposes its /api routes.');
+        throw new Error(`API is not reachable (tried ${url}). Ensure the Next.js server or backend is running and exposes its /api routes.`);
       }
       
       // Handle timeout errors
