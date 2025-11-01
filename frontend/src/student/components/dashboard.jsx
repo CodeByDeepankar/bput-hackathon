@@ -50,9 +50,10 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
         <div className="absolute right-4 top-4 opacity-20">
           <BookOpen size={ 64 } />
         </div>
-      </div>
- 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+  </div>
+
+  { /* Stats Grid */ }
+  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
@@ -104,7 +105,7 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span>{ user.xp } XP</span>
               <span>{ user.xpToNextLevel } XP</span>
             </div>
@@ -116,7 +117,7 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 gap-6">
+  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         { /* Recent Achievements */ }
         <Card>
           <CardHeader>
@@ -177,10 +178,10 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
           <CardTitle>Continue Learning</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Button 
               onClick={ () => onNavigate('courses') } 
-              className="h-auto p-4 flex flex-col items-center gap-2"
+              className="flex h-auto w-full flex-col items-center gap-2 p-4"
               variant="outline"
             >
               <BookOpen className="w-8 h-8" />
@@ -188,7 +189,7 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
             </Button>
             <Button 
               onClick={ () => onNavigate('quiz') } 
-              className="h-auto p-4 flex flex-col items-center gap-2"
+              className="flex h-auto w-full flex-col items-center gap-2 p-4"
               variant="outline"
             >
               <Target className="w-8 h-8" />
@@ -196,7 +197,7 @@ export function Dashboard({ user, onNavigate }) { const progressPercentage = (us
             </Button>
             <Button 
               onClick={ () => onNavigate('leaderboard') } 
-              className="h-auto p-4 flex flex-col items-center gap-2"
+              className="flex h-auto w-full flex-col items-center gap-2 p-4"
               variant="outline"
             >
               <Users className="w-8 h-8" />

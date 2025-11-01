@@ -40,14 +40,14 @@ export function Home({ user, onNavigate }) { // Today's Challenge
       />
 
       { /* Hero Section */ }
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 p-8 text-white">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 p-6 text-white sm:p-8">
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
             <Sparkles className="w-6 h-6 text-yellow-300" />
             <span className="text-yellow-300 font-medium">Welcome to GyanaRatna</span>
           </div>
-          <h1 className="text-4xl mb-4">Continue Your Learning Journey, { user.name }!</h1>
-          <p className="text-blue-100 mb-6 max-w-2xl">
+          <h1 className="mb-4 text-3xl sm:text-4xl">Continue Your Learning Journey, { user.name }!</h1>
+          <p className="text-blue-100 mb-6 max-w-2xl text-sm sm:text-base">
             Discover new knowledge, complete challenges, and unlock achievements. 
             Your next adventure in learning awaits!
           </p>
@@ -73,12 +73,12 @@ export function Home({ user, onNavigate }) { // Today's Challenge
         </div>
         
         { /* Background decoration */ }
-        <div className="absolute right-8 top-8 opacity-20">
+        <div className="absolute right-8 top-8 hidden opacity-20 sm:block">
           <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center">
             <BookOpen className="w-16 h-16 text-blue-600" />
           </div>
         </div>
-        <div className="absolute -right-4 -bottom-4 opacity-10">
+        <div className="absolute -right-4 -bottom-4 hidden opacity-10 sm:block">
           <div className="w-48 h-48 bg-white rounded-full"></div>
         </div>
       </div>
@@ -100,8 +100,8 @@ export function Home({ user, onNavigate }) { // Today's Challenge
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3 sm:items-center">
               <span className="text-2xl">{ todaysChallenge.icon }</span>
               <div>
                 <p className="font-medium">{ todaysChallenge.title }</p>
@@ -110,7 +110,7 @@ export function Home({ user, onNavigate }) { // Today's Challenge
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
               <div className="w-32 h-2 bg-orange-200 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300"
@@ -127,7 +127,7 @@ export function Home({ user, onNavigate }) { // Today's Challenge
       </Card>
 
       { /* Study Stats */ }
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         { studyStats.map((stat, index) => {
           const IconComponent = stat.icon;
           return (
@@ -144,7 +144,7 @@ export function Home({ user, onNavigate }) { // Today's Challenge
         })}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         { /* Featured Courses */ }
         <Card>
           <CardHeader>
@@ -162,7 +162,7 @@ export function Home({ user, onNavigate }) { // Today's Challenge
           <CardContent className="space-y-4">
             { featuredCourses.map((course) => (
               <div key={course.id } className="group cursor-pointer" onClick={ () => onNavigate('courses') }>
-                <div className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted transition-colors">
+                <div className="flex flex-col gap-4 rounded-lg border p-4 transition-colors hover:bg-muted sm:flex-row sm:items-center">
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden">
                     <ImageWithFallback 
                       src={ course.imageUrl }
@@ -230,10 +230,10 @@ export function Home({ user, onNavigate }) { // Today's Challenge
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Button 
               variant="outline" 
-              className="h-auto p-4 flex flex-col items-center gap-3"
+              className="flex h-auto w-full flex-col items-center gap-3 p-4"
               onClick={ () => onNavigate('courses') }
             >
               <BookOpen className="w-8 h-8 text-blue-600" />
@@ -241,7 +241,7 @@ export function Home({ user, onNavigate }) { // Today's Challenge
             </Button>
             <Button 
               variant="outline" 
-              className="h-auto p-4 flex flex-col items-center gap-3"
+              className="flex h-auto w-full flex-col items-center gap-3 p-4"
               onClick={ () => onNavigate('quiz') }
             >
               <Target className="w-8 h-8 text-purple-600" />
@@ -249,7 +249,7 @@ export function Home({ user, onNavigate }) { // Today's Challenge
             </Button>
             <Button 
               variant="outline" 
-              className="h-auto p-4 flex flex-col items-center gap-3"
+              className="flex h-auto w-full flex-col items-center gap-3 p-4"
               onClick={ () => onNavigate('leaderboard') }
             >
               <Users className="w-8 h-8 text-green-600" />
@@ -257,7 +257,7 @@ export function Home({ user, onNavigate }) { // Today's Challenge
             </Button>
             <Button 
               variant="outline" 
-              className="h-auto p-4 flex flex-col items-center gap-3"
+              className="flex h-auto w-full flex-col items-center gap-3 p-4"
               onClick={ () => onNavigate('achievements') }
             >
               <Award className="w-8 h-8 text-yellow-600" />

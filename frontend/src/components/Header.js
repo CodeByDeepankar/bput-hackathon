@@ -37,7 +37,7 @@ export default function Header() {
       className={`${headerRightPad} w-full max-w-7xl mx-auto px-4 py-3 flex justify-between items-center relative z-50`}
       style={isLight ? { backgroundColor: "#ffffff", color: "#000000" } : { backgroundColor: "#000000", color: "#f8fafc" }}
     >
-      <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+      <div className="flex items-center gap-2">
         {/* Use public asset with absolute path; fallback to initials if missing */}
         {(() => {
           const [ok] = [true];
@@ -47,7 +47,7 @@ export default function Header() {
             <div className="w-8 h-8 rounded bg-white text-blue-600 flex items-center justify-center text-xs font-bold">SL</div>
           );
         })()}
-        <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate max-w-[10rem] sm:max-w-[14rem]">GYANARATNA</h1>
+        <h1 className="text-xl font-bold">GYANARATNA</h1>
       </div>
       <nav>
         {isWelcome ? (
@@ -58,8 +58,8 @@ export default function Header() {
               </li>
             </ul>
             <ThemeToggle />
-          </div>
-        ) : isStudentShell ? (
+            </div>
+          ) : isStudentShell ? (
           // Replace nav with language toggle + online badge + Clerk profile button on student pages
           <ClientOnly fallback={<div className="flex items-center gap-3 flex-shrink-0"><OnlineBadge /><ThemeToggle /><PreHeader /></div>}>
             <div className="flex items-center gap-3 flex-shrink-0">
