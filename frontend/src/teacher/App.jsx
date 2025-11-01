@@ -11,13 +11,13 @@ export default function App() { const [currentView, setCurrentView] = useState('
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigationItems = [
-    { id: 'home' as ViewType, label: 'Dashboard', description: 'Overview of all STEM education metrics', icon: Home },
-    { id: 'class-overview' as ViewType, label: 'Classes', description: 'STEM classes and student statistics', icon: Users },
-    { id: 'student-progress' as ViewType, label: 'Students', description: 'Individual STEM performance tracking', icon: TrendingUp },
-    { id: 'progress-reports' as ViewType, label: 'Reports', description: 'STEM analytics and detailed reports', icon: BarChart3 }
+    { id: 'home', label: 'Dashboard', description: 'Overview of all STEM education metrics', icon: Home },
+    { id: 'class-overview', label: 'Classes', description: 'STEM classes and student statistics', icon: Users },
+    { id: 'student-progress', label: 'Students', description: 'Individual STEM performance tracking', icon: TrendingUp },
+    { id: 'progress-reports', label: 'Reports', description: 'STEM analytics and detailed reports', icon: BarChart3 }
   ];
 
-  const handleNavigation = (view: ViewType) => { setCurrentView(view);
+  const handleNavigation = (view) => { setCurrentView(view);
     setIsMenuOpen(false); };
 
   const getCurrentViewTitle = () => { const item = navigationItems.find(item => item.id === currentView);

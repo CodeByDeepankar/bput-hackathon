@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 export default function PreHeader({ included = "en,as,bn,gu,hi,kn,ml,mr,ne,or,pa,sa,sd,ta,te,ur,ks,mai,brx,sat,doi" }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langs, setLangs] = useState([]);
   const [currentCode, setCurrentCode] = useState("en");
 
-  const EN_LABELS = {
+  const EN_LABELS = useMemo(() => ({
     en: "English",
     as: "Assamese",
     bn: "Bengali",
@@ -28,7 +28,7 @@ export default function PreHeader({ included = "en,as,bn,gu,hi,kn,ml,mr,ne,or,pa
     brx: "Bodo",
     sat: "Santali",
     doi: "Dogri",
-  };
+  }), []);
   useEffect(() => {
     // Inject Google Translate script once
     if (document.getElementById("google-translate-script")) return;
@@ -79,7 +79,7 @@ export default function PreHeader({ included = "en,as,bn,gu,hi,kn,ml,mr,ne,or,pa
       }
     };
     document.body.appendChild(script);
-  }, [included]);
+  }, [included, EN_LABELS]);
 
   // Aggressively hide Google top banner if it appears after a language is selected
   useEffect(() => {
