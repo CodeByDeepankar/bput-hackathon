@@ -2,16 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import apiClient from '@/lib/api';
 
 // Custom hook for subjects data
-export function useSubjects(classFilter = null) {
+export function useSubjects(options = {}) {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const normalized = typeof options === 'string' ? { classFilter: options } : options || {};
+  const { classFilter = null, schoolId = null } = normalized;
 
   const fetchSubjects = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiClient.getSubjects(classFilter);
+      const data = await apiClient.getSubjects({ classFilter, schoolId });
       setSubjects(data);
     } catch (err) {
       console.error('Failed to fetch subjects:', err);
@@ -21,7 +24,7 @@ export function useSubjects(classFilter = null) {
     } finally {
       setLoading(false);
     }
-  }, [classFilter]);
+  }, [classFilter, schoolId]);
 
   useEffect(() => {
     fetchSubjects();
@@ -77,13 +80,13 @@ export function useQuizzes(filters = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { subjectId, createdBy } = filters;
+  const { subjectId, createdBy, schoolId } = filters;
 
   const fetchQuizzes = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiClient.getQuizzes({ subjectId, createdBy });
+      const data = await apiClient.getQuizzes({ subjectId, createdBy, schoolId });
       setQuizzes(data);
     } catch (err) {
       console.error('Failed to fetch quizzes:', err);
@@ -93,7 +96,7 @@ export function useQuizzes(filters = {}) {
     } finally {
       setLoading(false);
     }
-  }, [subjectId, createdBy]);
+  }, [subjectId, createdBy, schoolId]);
 
   useEffect(() => {
     fetchQuizzes();
@@ -116,6 +119,81 @@ export function useQuizzes(filters = {}) {
     error,
     fetchQuizzes,
     createQuiz,
+  };
+}
+
+export function useQuizQuestions(params = {}) {
+  const { quizId, schoolId, includeAnswers = false } = params;
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(Boolean(quizId || schoolId));
+  const [error, setError] = useState(null);
+
+  const fetchQuestions = useCallback(async () => {
+    if (!quizId && !schoolId) {
+      setQuestions([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await apiClient.getQuizQuestions({ quizId, schoolId, includeAnswers });
+      setQuestions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to fetch questions:', err);
+      setError(err.message);
+      setQuestions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [quizId, schoolId, includeAnswers]);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [fetchQuestions]);
+
+  const addQuestion = useCallback(async (payload) => {
+    try {
+      const result = await apiClient.createQuestion(payload);
+      await fetchQuestions();
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [fetchQuestions]);
+
+  const updateQuestion = useCallback(async (id, payload) => {
+    try {
+      const result = await apiClient.updateQuestion(id, payload);
+      await fetchQuestions();
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [fetchQuestions]);
+
+  const removeQuestion = useCallback(async (id, deletedBy) => {
+    try {
+      const result = await apiClient.deleteQuestion(id, deletedBy);
+      await fetchQuestions();
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [fetchQuestions]);
+
+  return {
+    questions,
+    loading,
+    error,
+    fetchQuestions,
+    addQuestion,
+    updateQuestion,
+    removeQuestion,
   };
 }
 
@@ -410,5 +488,81 @@ export function useStudentsBySchool(schoolId) {
     loading,
     error,
     fetchStudents,
+  };
+}
+
+// Custom hook for school-specific shared content
+export function useSchoolContent(schoolId, options = {}) {
+  const { type = null, limit = null } = options;
+  const [content, setContent] = useState([]);
+  const [loading, setLoading] = useState(Boolean(schoolId));
+  const [error, setError] = useState(null);
+
+  const fetchContent = useCallback(async () => {
+    if (!schoolId) {
+      setContent([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await apiClient.getSchoolContent(schoolId, { type, limit });
+      setContent(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to fetch school content:', err);
+      setError(err.message);
+      setContent([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [schoolId, type, limit]);
+
+  useEffect(() => {
+    fetchContent();
+  }, [fetchContent]);
+
+  const createContent = useCallback(async (contentPayload) => {
+    try {
+      const result = await apiClient.createContentItem(contentPayload);
+      await fetchContent();
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [fetchContent]);
+
+  const updateContent = useCallback(async (id, contentPayload) => {
+    try {
+      const result = await apiClient.updateContentItem(id, contentPayload);
+      await fetchContent();
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [fetchContent]);
+
+  const deleteContent = useCallback(async (id, deletedBy) => {
+    try {
+      const result = await apiClient.deleteContentItem(id, deletedBy);
+      await fetchContent();
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [fetchContent]);
+
+  return {
+    content,
+    loading,
+    error,
+    fetchContent,
+    createContent,
+    updateContent,
+    deleteContent,
   };
 }

@@ -1,34 +1,34 @@
 "use client";
 import { useEffect, useState } from "react";
 
+const EN_LABELS = {
+  en: "English",
+  as: "Assamese",
+  bn: "Bengali",
+  gu: "Gujarati",
+  hi: "Hindi",
+  kn: "Kannada",
+  ml: "Malayalam",
+  mr: "Marathi",
+  ne: "Nepali",
+  or: "Odia",
+  pa: "Punjabi",
+  sa: "Sanskrit",
+  sd: "Sindhi",
+  ta: "Tamil",
+  te: "Telugu",
+  ur: "Urdu",
+  ks: "Kashmiri",
+  mai: "Maithili",
+  brx: "Bodo",
+  sat: "Santali",
+  doi: "Dogri",
+};
+
 export default function PreHeader({ included = "en,as,bn,gu,hi,kn,ml,mr,ne,or,pa,sa,sd,ta,te,ur,ks,mai,brx,sat,doi" }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langs, setLangs] = useState([]);
   const [currentCode, setCurrentCode] = useState("en");
-
-  const EN_LABELS = {
-    en: "English",
-    as: "Assamese",
-    bn: "Bengali",
-    gu: "Gujarati",
-    hi: "Hindi",
-    kn: "Kannada",
-    ml: "Malayalam",
-    mr: "Marathi",
-    ne: "Nepali",
-    or: "Odia",
-    pa: "Punjabi",
-    sa: "Sanskrit",
-    sd: "Sindhi",
-    ta: "Tamil",
-    te: "Telugu",
-    ur: "Urdu",
-    ks: "Kashmiri",
-    mai: "Maithili",
-    brx: "Bodo",
-    sat: "Santali",
-    doi: "Dogri",
-  };
   useEffect(() => {
     // Inject Google Translate script once
     if (document.getElementById("google-translate-script")) return;
@@ -70,7 +70,11 @@ export default function PreHeader({ included = "en,as,bn,gu,hi,kn,ml,mr,ne,or,pa
         const mo = new MutationObserver(() => {
           const frame = document.querySelector('iframe.goog-te-menu-frame');
           if (frame && frame.parentNode) {
-            try { frame.parentNode.removeChild(frame); } catch {}
+            try {
+              frame.parentNode.removeChild(frame);
+            } catch (error) {
+              // ignore removal failures
+            }
           }
         });
         mo.observe(document.body, { childList: true, subtree: true });
@@ -87,17 +91,29 @@ export default function PreHeader({ included = "en,as,bn,gu,hi,kn,ml,mr,ne,or,pa
       const iframe = document.querySelector('iframe.goog-te-banner-frame');
       if (iframe) {
         iframe.style.display = 'none';
-        try { iframe.parentNode && iframe.parentNode.removeChild(iframe); } catch {}
+        try {
+          iframe.parentNode && iframe.parentNode.removeChild(iframe);
+        } catch (error) {
+          // ignore removal failures
+        }
       }
       const banner = document.querySelector('.goog-te-banner-frame');
       if (banner) {
         banner.style.display = 'none';
-        try { banner.parentNode && banner.parentNode.removeChild(banner); } catch {}
+        try {
+          banner.parentNode && banner.parentNode.removeChild(banner);
+        } catch (error) {
+          // ignore removal failures
+        }
       }
       const tt = document.getElementById('goog-gt-tt');
       if (tt) {
         tt.style.display = 'none';
-        try { tt.parentNode && tt.parentNode.removeChild(tt); } catch {}
+        try {
+          tt.parentNode && tt.parentNode.removeChild(tt);
+        } catch (error) {
+          // ignore removal failures
+        }
       }
       document.documentElement.style.top = '0px';
       document.body.style.top = '0px';

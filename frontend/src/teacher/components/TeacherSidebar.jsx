@@ -1,12 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, BookOpen, BarChart3 } from "lucide-react";
+import { Home, Users, BookOpen, BarChart3, UploadCloud, ClipboardList } from "lucide-react";
 
 const nav = [
   { href: "/teacher", label: "Dashboard", icon: Home },
   { href: "/teacher/classes", label: "Classes", icon: BookOpen },
   { href: "/teacher/students", label: "Students", icon: Users },
+  { href: "/teacher/content", label: "Content", icon: UploadCloud },
+  { href: "/teacher/quizzes", label: "Quizzes", icon: ClipboardList },
   { href: "/teacher/reports", label: "Reports", icon: BarChart3 },
 ];
 

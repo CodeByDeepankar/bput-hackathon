@@ -72,6 +72,9 @@ export async function POST() {
         description TEXT,
         difficulty TEXT CHECK (difficulty IN ('easy', 'medium', 'hard')),
         time_limit INTEGER,
+        created_by TEXT,
+        school_id TEXT,
+        is_bank BOOLEAN DEFAULT FALSE,
         passing_score INTEGER,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -84,6 +87,10 @@ export async function POST() {
         options JSONB NOT NULL,
         correct_answer TEXT NOT NULL,
         explanation TEXT,
+        difficulty TEXT CHECK (difficulty IN ('easy', 'medium', 'hard')) DEFAULT 'medium',
+        topic TEXT,
+        sub_topic TEXT,
+        school_id TEXT,
         "order" INTEGER,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -129,7 +136,11 @@ export async function POST() {
       );
 
       CREATE INDEX IF NOT EXISTS idx_quizzes_subject_id ON quizzes(subject_id);
+  CREATE INDEX IF NOT EXISTS idx_quizzes_school_id ON quizzes(school_id);
       CREATE INDEX IF NOT EXISTS idx_questions_quiz_id ON questions(quiz_id);
+  CREATE INDEX IF NOT EXISTS idx_questions_school_id ON questions(school_id);
+  CREATE INDEX IF NOT EXISTS idx_questions_difficulty ON questions(difficulty);
+  CREATE INDEX IF NOT EXISTS idx_questions_topic ON questions(topic);
       CREATE INDEX IF NOT EXISTS idx_quiz_responses_student_id ON quiz_responses(student_id);
       CREATE INDEX IF NOT EXISTS idx_quiz_responses_quiz_id ON quiz_responses(quiz_id);
       CREATE INDEX IF NOT EXISTS idx_achievements_user_id ON achievements(user_id);
