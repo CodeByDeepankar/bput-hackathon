@@ -22,10 +22,10 @@ function transformContent(code, filePath) {
   out = out.replace(/\r\n/g, '\n');
 
   // Fix import specifiers with pinned versions (from copy-paste)
-  out = out.replace(/@radix-ui\\/react-slot@[^\"']+/g, '@radix-ui/react-slot');
-  out = out.replace(/class-variance-authority@[^\"']+/g, 'class-variance-authority');
+  out = out.replace(/@radix-ui\/react-slot@[^"']+/g, '@radix-ui/react-slot');
+  out = out.replace(/class-variance-authority@[^"']+/g, 'class-variance-authority');
   // Generic normalize for any @radix-ui/react-* pinned versions
-  out = out.replace(/@radix-ui\\/(react-[^\"'@\s]+)@[^\"'\s]+/g, '@radix-ui/$1');
+  out = out.replace(/@radix-ui\/(react-[^"'@\s]+)@[^"'\s]+/g, '@radix-ui/$1');
 
   // Remove `import type ...` lines entirely
   out = out.replace(/^\s*import\s+type\s+[^;]+;?\s*$/gm, '');

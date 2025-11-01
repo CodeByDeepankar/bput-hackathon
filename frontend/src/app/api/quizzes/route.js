@@ -22,7 +22,7 @@ export async function GET(request) {
     let query = supabase
       .from("quizzes")
       .select(
-        "id, subject_id, title, description, difficulty, time_limit, created_by, school_id, created_at, updated_at"
+        "id, subject_id, title, description, difficulty, time_limit, created_by, school_id, is_bank, created_at, updated_at"
       )
       .order("created_at", { ascending: false });
 
@@ -42,6 +42,7 @@ export async function GET(request) {
         timeLimit: quiz.time_limit,
         createdBy: quiz.created_by,
         schoolId: quiz.school_id,
+        isBank: quiz.is_bank,
         createdAt: quiz.created_at,
         updatedAt: quiz.updated_at,
       }))
@@ -62,6 +63,7 @@ export async function POST(request) {
       timeLimit = 300,
       createdBy,
       questions = [],
+      isBank = false,
     } = body || {};
 
     if (!subjectId || !title || !createdBy) {
@@ -89,6 +91,7 @@ export async function POST(request) {
       time_limit: timeLimit,
       created_by: createdBy,
       school_id: creator.school_id || null,
+      is_bank: Boolean(isBank),
       created_at: now,
       updated_at: now,
     };
@@ -96,16 +99,32 @@ export async function POST(request) {
     await run(supabase.from("quizzes").insert(quizDoc));
 
     if (Array.isArray(questions) && questions.length > 0) {
-      const questionDocs = questions.map((question, index) => ({
+      const questionDocs = questions.map((question, index) => {
+        const normalizedOptions = Array.isArray(question.options)
+          ? question.options.map((option) => (typeof option === "string" ? option.trim() : String(option))).filter(Boolean)
+          : [];
+        if (!normalizedOptions.length) {
+          throw new Error("Each question must include at least one option");
+        }
+        const difficultyValue = (question.difficulty || "medium").toLowerCase();
+        const allowedDifficulty = ["easy", "medium", "hard"].includes(difficultyValue)
+          ? difficultyValue
+          : "medium";
+        return {
         id: `${quizId}:question:${index + 1}`,
         quiz_id: quizId,
-        text: question.text,
-        options: question.options || [],
-        correct_answer: question.correctAnswer,
-        explanation: question.explanation || "",
+          text: question.text,
+          options: normalizedOptions,
+          correct_answer: question.correctAnswer,
+          explanation: question.explanation || "",
+          difficulty: allowedDifficulty,
+          topic: question.topic || null,
+          sub_topic: question.subTopic || null,
+          school_id: creator.school_id || null,
         order: index + 1,
         created_at: nowIso(),
-      }));
+        };
+      });
       await run(supabase.from("questions").insert(questionDocs));
     }
 
