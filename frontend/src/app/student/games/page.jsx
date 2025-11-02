@@ -11,6 +11,8 @@ export default function GamesHome() {
   const games = [
     { id: "math-blitz", title: t.games.titles.mathBlitz(), href: "/student/games/math-blitz", emoji: "🔢" },
     { id: "stem-quiz", title: t.games.titles.stemQuiz ? t.games.titles.stemQuiz() : t.games.titles.scienceQuest(), href: "/student/games/stem-quiz", emoji: "🧪" },
+    { id: "engineering", title: "CSE Learning Quiz", href: "/student/games/engineering", emoji: "💻" },
+    { id: "quick-recap", title: "Quick Recap of Topics", href: "/student/games/recap", emoji: "📚" },
     { id: "big-o-runner", title: "Big O Runner", href: "/games/big-o-runner", emoji: "🏃‍♂️" },
   ];
   return (
