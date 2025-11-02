@@ -7,7 +7,7 @@ import { Progress } from '../components/ui/progress';
 import { useUser } from '@clerk/nextjs';
 import { useI18n } from '@/i18n/useI18n';
 
-import { useEffect, useMemo, useState } from 'react';
+
 import { useTheme } from '@/components/ThemeProvider';
 import styles from './Dashboard.module.css';
 
