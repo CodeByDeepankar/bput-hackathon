@@ -224,6 +224,7 @@ export default function Welcome() {
             <div className="flex items-center justify-center w-full h-screen">
               {!showGif ? (
                 <video
+                  suppressHydrationWarning
                   ref={videoRef}
                   src="/home.mp4"
                   preload="auto"

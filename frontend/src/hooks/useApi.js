@@ -466,11 +466,16 @@ export function useSchoolProgress(schoolId) {
 // Custom hook for students in a school
 export function useStudentsBySchool(schoolId) {
   const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(schoolId));
   const [error, setError] = useState(null);
 
   const fetchStudents = useCallback(async () => {
-    if (!schoolId) return;
+    if (!schoolId) {
+      setStudents([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);

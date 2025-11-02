@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/nextjs";
 import { fetchUserRole } from "@/lib/users";
@@ -7,35 +8,9 @@ import { useRealtimeQuizProgress } from "@/hooks/useRealtimeQuizProgress";
 import { Card, CardContent } from "@teacher/components/ui/card";
 import { Input } from "@teacher/components/ui/input";
 import { Badge } from "@teacher/components/ui/badge";
+import { Button } from "@teacher/components/ui/button";
 import { Avatar, AvatarFallback } from "@teacher/components/ui/avatar";
-
-function initials(value) {
-  const parts = String(value || "?").trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? "?";
-  const second = parts.length > 1 ? parts[1]?.[0] : null;
-  return `${first ?? "?"}${second ?? ""}`.toUpperCase();
-}
-
-function clampPercent(value) {
-  if (typeof value !== "number" || Number.isNaN(value)) return 0;
-  return Math.min(100, Math.max(0, Math.round(value)));
-}
-
-function formatLastActivity(value) {
-  if (!value) return "No quiz activity yet";
-  const ts = new Date(value);
-  if (Number.isNaN(ts.getTime())) return "No quiz activity yet";
-  const diffMs = Date.now() - ts.getTime();
-  if (diffMs < 0) return "Scheduled";
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
-  return ts.toLocaleDateString();
-}
+import { clampPercent, formatLastActivity, initials } from "@/lib/studentFormat";
 
 function StudentCard({ student }) {
   const progress = clampPercent(student.averageScore);
@@ -60,6 +35,11 @@ function StudentCard({ student }) {
             <div className="text-sm mt-1">Last Activity <b>{formatLastActivity(student.lastActivity)}</b></div>
             <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
               <div className="h-full bg-violet-600" style={{ width: `${progress}%` }} />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm" className="bg-white">
+                <Link href={`/teacher/students/${student.id}`}>View details &amp; report</Link>
+              </Button>
             </div>
           </div>
         </div>
