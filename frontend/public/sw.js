@@ -3,7 +3,7 @@
   - Next.js chunk handling to prevent chunk load errors
   - Request queue for offline POST/PUT/DELETE with background sync
 */
-const VERSION = 'v9';
+const VERSION = 'v10';
 const APP_SHELL_CACHE = `glp-shell-${VERSION}`;
 const STATIC_CACHE = `glp-static-${VERSION}`;
 const DATA_CACHE = `glp-data-${VERSION}`;
@@ -15,6 +15,56 @@ const CORE_ASSETS = [
   '/favicon.ico',
   // Fonts commonly used by the app
   '/fonts/KFOmCnqEu92Fr1Mu4mxK.woff2'
+];
+
+const APP_ROUTES = [
+  '/',
+  '/games',
+  '/games/big-o-runner',
+  '/games/big-o-runner/index.html',
+  '/games/stemquiz.html',
+  '/progress',
+  '/quiz',
+  '/student',
+  '/student/achievements',
+  '/student/adventures',
+  '/student/challenges',
+  '/student/courses',
+  '/student/dashboard-v2',
+  '/student/games',
+  '/student/games/math-blitz',
+  '/student/games/science-quest',
+  '/student/games/srem-quiz',
+  '/student/games/stem-quiz',
+  '/student/leaderboard',
+  '/student/lessons',
+  '/student/new-dashboard',
+  '/student/quiz',
+  '/student/quiz/results',
+  '/student/search',
+  '/student/study-buddy',
+  '/subjects',
+  '/teacher',
+  '/teacher/classes',
+  '/teacher/content',
+  '/teacher/quizzes',
+  '/teacher/reports',
+  '/teacher/students'
+];
+
+const STATIC_WARM_ASSETS = [
+  '/games/big-o-runner/game.js',
+  '/fonts/KFOmCnqEu92Fr1Mu4mxK.woff2',
+  '/logo.webp',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-192-maskable.png',
+  '/icons/icon-256.png',
+  '/icons/icon-256-maskable.png',
+  '/icons/icon-384.png',
+  '/icons/icon-384-maskable.png',
+  '/icons/icon-512.png',
+  '/icons/icon-512-maskable.png'
 ];
 
 // IndexedDB helpers for storing JSON payloads (subjects, quizzes, streak etc.)
@@ -122,27 +172,25 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(APP_SHELL_CACHE);
-      await cache.addAll(CORE_ASSETS);
+      try {
+        await Promise.allSettled(CORE_ASSETS.map((asset) => cache.add(asset)));
+      } catch (err) {
+        console.warn('[SW] Core asset precache issue:', err);
+      }
       // Pre-cache key app routes for better offline experience
       try {
-        const routes = [
-          '/',
-          '/student',
-          '/student/challenges',
-          '/student/achievements',
-          '/student/courses',
-          '/student/study-buddy',
-          '/teacher',
-          '/teacher/students',
-          '/teacher/classes',
-          '/teacher/reports',
-          '/subjects',
-          '/progress',
-        ];
-        await Promise.all(routes.map(r => cache.add(r)));
+        const routes = [...new Set(APP_ROUTES)];
+        await Promise.allSettled(routes.map((r) => cache.add(r)));
         console.log('[SW] Pre-cached app routes');
       } catch (e) {
         console.log('[SW] Could not pre-cache routes (server may be down)');
+      }
+      try {
+        const staticCache = await caches.open(STATIC_CACHE);
+        await Promise.allSettled([...new Set(STATIC_WARM_ASSETS)].map((asset) => staticCache.add(asset)));
+        console.log('[SW] Pre-cached static assets');
+      } catch (e) {
+        console.log('[SW] Could not pre-cache static assets');
       }
       await self.skipWaiting();
     })()
@@ -166,6 +214,7 @@ self.addEventListener('fetch', (event) => {
   const isGet = request.method === 'GET';
 
   const url = new URL(request.url);
+  const acceptsHtml = request.headers.get('accept')?.includes('text/html');
 
   // Queue non-GET API requests when offline
   if (!isGet) {
@@ -294,7 +343,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Navigation requests: serve cached pages when offline
-  if (request.mode === 'navigate') {
+  if (request.mode === 'navigate' || acceptsHtml) {
     // Allow auth-related routes to bypass entirely (Clerk, OAuth callbacks)
     if (url.pathname.startsWith('/sign-in') || url.pathname.startsWith('/sign-up') || url.pathname.includes('oauth')) {
       return; // default browser fetch
@@ -337,7 +386,16 @@ self.addEventListener('fetch', (event) => {
         
         // Last resort: offline page
         console.log('[SW] Serving offline page for:', url.pathname);
-        return caches.match('/offline.html');
+        const offline = await caches.match('/offline.html');
+        if (offline) {
+          console.log('[SW] Offline fallback from cache');
+          return offline;
+        }
+        console.log('[SW] Offline fallback inline response');
+        return new Response(
+          '<!doctype html><title>Offline</title><h1>You are offline</h1><p>Please reconnect.</p>',
+          { headers: { 'Content-Type': 'text/html' } }
+        );
       }
     })());
     return;

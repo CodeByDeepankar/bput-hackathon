@@ -1,4 +1,5 @@
-import { supabase, run, nowIso, normalizeId } from "./supabase";
+import { supabase, run, runSingle, nowIso, normalizeId } from "./supabase";
+import { broadcast } from "./events";
 
 function requireId(value, label) {
   if (!value) {
@@ -8,27 +9,99 @@ function requireId(value, label) {
   }
 }
 
-export async function recordQuizCompletionInternal({
-  userId,
-  quizId,
-  score,
-  timeSpent,
-  subject,
-}) {
+export async function recordQuizCompletionInternal(
+  {
+    userId,
+    quizId,
+    score,
+    timeSpent,
+    subject,
+    correctAnswers = null,
+    totalQuestions = null,
+    answers = null,
+  },
+  { skipResponseInsert = false } = {}
+) {
   requireId(userId, "userId");
   requireId(quizId, "quizId");
+
+  const numericScore = typeof score === "number" ? score : Number(score) || 0;
+  const numericCorrect =
+    typeof correctAnswers === "number"
+      ? correctAnswers
+      : correctAnswers != null
+      ? Number(correctAnswers)
+      : null;
+  const numericTotal =
+    typeof totalQuestions === "number"
+      ? totalQuestions
+      : totalQuestions != null
+      ? Number(totalQuestions)
+      : null;
 
   const doc = {
     id: normalizeId("completion", `${userId}:${quizId}`),
     user_id: userId,
     quiz_id: quizId,
-    score: score || 0,
+    score: numericScore || 0,
     time_spent: timeSpent || 0,
     subject: subject || null,
     completed_at: nowIso(),
   };
 
   await run(supabase.from("quiz_completions").insert(doc));
+
+  if (!skipResponseInsert) {
+    const responseDoc = {
+      id: normalizeId("response", `${userId}:${quizId}`),
+      quiz_id: quizId,
+      student_id: userId,
+      answers: answers || null,
+      score: numericScore || 0,
+      correct_answers: Number.isFinite(numericCorrect) ? numericCorrect : null,
+      total_questions: Number.isFinite(numericTotal) ? numericTotal : null,
+      time_spent: timeSpent || 0,
+      submitted_at: doc.completed_at,
+    };
+
+    try {
+      await run(supabase.from("quiz_responses").insert(responseDoc));
+    } catch (responseError) {
+      console.error("Failed to record quiz response snapshot", responseError);
+    }
+  }
+
+  let roleDoc = null;
+  try {
+    roleDoc = await runSingle(
+      supabase
+        .from("user_roles")
+        .select("user_id, name, class, school_id")
+        .eq("user_id", userId)
+        .maybeSingle()
+    );
+  } catch (roleError) {
+    console.warn("Unable to load user role for quiz completion", roleError);
+  }
+
+  try {
+    broadcast("quiz.progress", {
+      userId,
+      quizId,
+      score: numericScore || 0,
+      correctAnswers: Number.isFinite(numericCorrect) ? numericCorrect : null,
+      totalQuestions: Number.isFinite(numericTotal) ? numericTotal : null,
+      subject: subject || null,
+      completedAt: doc.completed_at,
+      schoolId: roleDoc?.school_id ?? null,
+      className: roleDoc?.class ?? null,
+      studentName: roleDoc?.name ?? null,
+      responseInserted: !skipResponseInsert,
+    });
+  } catch (broadcastError) {
+    console.error("quiz.progress broadcast failed", broadcastError);
+  }
+
   return doc;
 }
 

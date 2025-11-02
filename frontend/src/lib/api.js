@@ -76,12 +76,45 @@ class ApiClient {
     }
   }
 
-  // Health check method
+  // Health check method (tolerant of backend downtime)
   async healthCheck() {
+    const url = `${this.baseURL}/health`;
     try {
-      return await this.request('/health');
+      const response = await fetch(url, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (parseError) {
+        payload = {};
+      }
+
+      if (response.ok) {
+        return {
+          ok: true,
+          status: response.status,
+          payload,
+        };
+      }
+
+      return {
+        ok: false,
+        status: response.status,
+        payload,
+        error:
+          payload?.error ||
+          payload?.message ||
+          response.statusText ||
+          `Health check failed with status ${response.status}`,
+      };
     } catch (error) {
-      throw new Error('Backend health check failed: ' + error.message);
+      return {
+        ok: false,
+        status: 0,
+        error: error?.message || 'Unable to reach backend health endpoint.',
+      };
     }
   }
 

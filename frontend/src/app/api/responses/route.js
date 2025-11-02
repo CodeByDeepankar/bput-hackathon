@@ -60,13 +60,19 @@ export async function POST(request) {
 
     await run(supabase.from("quiz_responses").insert(responseDoc));
 
-    await recordQuizCompletionInternal({
-      userId: studentId,
-      quizId,
-      score: scorePercentage,
-      timeSpent,
-      subject: quiz.subject_id,
-    });
+    await recordQuizCompletionInternal(
+      {
+        userId: studentId,
+        quizId,
+        score: scorePercentage,
+        timeSpent,
+        subject: quiz.subject_id,
+        correctAnswers,
+        totalQuestions,
+        answers,
+      },
+      { skipResponseInsert: true }
+    );
 
     broadcast("quiz.attempted", {
       quizId,

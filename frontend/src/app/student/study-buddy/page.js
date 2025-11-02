@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { askStudyBuddy } from '@/lib/api';
 import { useI18n } from '@/i18n/useI18n';
 import { useUser } from '@clerk/nextjs';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function StudyBuddyPage() {
   const { user } = useUser();
@@ -16,6 +18,25 @@ export default function StudyBuddyPage() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [history]);
+
+  const renderFormattedText = (text) => {
+    if (!text) return null;
+    return (
+      <div className="space-y-2">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+            ul: ({ children }) => <ul className="mb-2 list-disc list-inside space-y-1">{children}</ul>,
+            ol: ({ children }) => <ol className="mb-2 list-decimal list-inside space-y-1">{children}</ol>,
+            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+          }}
+        >
+          {text}
+        </ReactMarkdown>
+      </div>
+    );
+  };
 
   async function send() {
     if (!input.trim()) return;
@@ -72,7 +93,7 @@ export default function StudyBuddyPage() {
             {history.map((m,i)=>(
               <div key={i} className={`flex ${m.role==='user'?'justify-end':'justify-start'}`}>
                 <div className={`max-w-[80%] whitespace-pre-wrap leading-relaxed rounded-lg px-3 py-2 shadow-sm text-[13px] ${m.role==='user'?'bg-blue-600 text-white':'bg-slate-100 text-slate-800'}`}> 
-                  {m.content}
+                  {renderFormattedText(m.content)}
                 </div>
               </div>
             ))}

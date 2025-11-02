@@ -13,11 +13,19 @@ const ConnectionStatus = () => {
 
   // Extracted so UI can trigger a retry
   const checkConnection = async () => {
+    setStatus('checking');
+    setError(null);
+
     try {
-      setStatus('checking');
-      setError(null);
-      await apiClient.healthCheck();
-      setStatus('connected');
+      const result = await apiClient.healthCheck();
+      if (result?.ok) {
+        setStatus('connected');
+        return;
+      }
+
+      setStatus('disconnected');
+      const reason = result?.error || `Health endpoint returned status ${result?.status || 'unknown'}`;
+      setError(reason);
     } catch (err) {
       setStatus('disconnected');
       setError(err?.message || String(err));
@@ -65,6 +73,7 @@ const ConnectionStatus = () => {
               Tried: <span className="font-mono">{apiClient?.baseURL || 'unknown'}</span>
               <br />
               Ensure the backend or Next.js dev server is running (default http://localhost:3000) and exposes its /api routes.
+              {error && resultDetails(error)}
             </div>
           </div>
         )}
@@ -74,3 +83,12 @@ const ConnectionStatus = () => {
 };
 
 export default ConnectionStatus;
+
+function resultDetails(message) {
+  if (!message) return null;
+  return (
+    <div className="mt-2 text-[11px] leading-snug opacity-80">
+      {message}
+    </div>
+  );
+}

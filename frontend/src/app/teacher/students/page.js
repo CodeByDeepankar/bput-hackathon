@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/nextjs";
 import { fetchUserRole } from "@/lib/users";
 import { useSchoolProgress } from "@/hooks/useApi";
+import { useRealtimeQuizProgress } from "@/hooks/useRealtimeQuizProgress";
 import { Card, CardContent } from "@teacher/components/ui/card";
 import { Input } from "@teacher/components/ui/input";
 import { Badge } from "@teacher/components/ui/badge";
@@ -105,7 +106,19 @@ function StudentsContent() {
   }, [isLoaded, isSignedIn, user?.id]);
 
   const schoolId = roleDoc?.schoolId || roleDoc?.school_id || null;
-  const { schoolProgress, loading: progressLoading, error: progressError } = useSchoolProgress(schoolId);
+  const {
+    schoolProgress,
+    loading: progressLoading,
+    error: progressError,
+    fetchSchoolProgress,
+  } = useSchoolProgress(schoolId);
+
+  const handleRealtimeQuiz = useCallback(() => {
+    if (!schoolId) return;
+    fetchSchoolProgress();
+  }, [fetchSchoolProgress, schoolId]);
+
+  useRealtimeQuizProgress({ schoolId, onQuizEvent: handleRealtimeQuiz });
 
   const students = useMemo(() => {
     if (!schoolProgress?.students) return [];

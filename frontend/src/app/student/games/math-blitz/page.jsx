@@ -115,12 +115,20 @@ export default function MathBlitzPage() {
       if (!completed || !studentClass) return;
       try {
         const userId = localStorage.getItem('userId') || 'demo-student';
+        const totalQuestions = questions.length || 1;
+        const answersPayload = Object.entries(answers).reduce((acc, [key, value]) => {
+          acc[`question-${key}`] = value?.choice ?? null;
+          return acc;
+        }, {});
         const payload = {
           userId,
           quizId: `math-blitz:class-${studentClass}`,
-          score: Math.round((score / questions.length) * 100),
+          score: Math.round((score / totalQuestions) * 100),
           timeSpent: 0,
-          subject: 'math'
+          subject: 'math',
+          correctAnswers: score,
+          totalQuestions,
+          answers: answersPayload,
         };
         await recordQuizCompletion(payload);
         if (score === questions.length) setJustEarnedBadge({ key: 'badge:math:perfect-10', title: 'Math Whiz' });
