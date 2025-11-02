@@ -6,7 +6,16 @@ export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
-    const { userId, quizId, score, timeSpent, subject } = await request.json();
+    const {
+      userId,
+      quizId,
+      score,
+      timeSpent,
+      subject,
+      correctAnswers = null,
+      totalQuestions = null,
+      answers = null,
+    } = await request.json();
     if (!userId || !quizId) {
       return NextResponse.json({ error: "userId and quizId are required" }, { status: 400 });
     }
@@ -17,6 +26,9 @@ export async function POST(request) {
       score,
       timeSpent,
       subject,
+      correctAnswers,
+      totalQuestions,
+      answers,
     });
     const newStreak = await calculateStreak(userId);
 

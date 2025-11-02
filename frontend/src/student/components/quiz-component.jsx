@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
 import { Badge } from "./ui/badge";
-import { CheckCircle, XCircle, Star, Trophy, Target, ChevronLeft, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Star, Trophy, Target, ChevronLeft, Loader2, AlertCircle, Search } from "lucide-react";
 import { useI18n } from "@/i18n/useI18n";
 import { fetchUserRole } from "@/lib/users";
 import { getQuizzes, getQuizQuestions, recordQuizCompletion } from "@/lib/api";
@@ -44,10 +44,39 @@ function getDifficultyColor(difficulty) {
 	}
 }
 
+function buildGrokSearchUrl(question) {
+	if (!question) {
+		return "https://grokipedia.com/search?q=learning";
+	}
+
+	const segments = [];
+	if (question.text) segments.push(question.text);
+	if (Array.isArray(question.options) && question.options.length) {
+		segments.push(question.options.join(" "));
+	}
+	if (question.topic) segments.push(question.topic);
+	if (question.subTopic) segments.push(question.subTopic);
+	if (question.correctAnswer) segments.push(question.correctAnswer);
+
+	const rawQuery = segments
+		.map((part) => (typeof part === "string" ? part.trim() : ""))
+		.filter(Boolean)
+		.join(" ");
+	const encoded = rawQuery.length ? encodeURIComponent(rawQuery) : "learning";
+	return `https://grokipedia.com/search?q=${encoded}`;
+}
+
 export default function QuizComponent() {
 	const router = useRouter();
 	const { t } = useI18n();
 	const { user, isLoaded } = useUser();
+	const isMountedRef = useRef(true);
+
+	useEffect(() => {
+		return () => {
+			isMountedRef.current = false;
+		};
+	}, []);
 
 	const [roleDoc, setRoleDoc] = useState(null);
 	const [roleLoading, setRoleLoading] = useState(true);
@@ -69,6 +98,7 @@ export default function QuizComponent() {
 	const [showAnswer, setShowAnswer] = useState(false);
 	const [activeQuizId, setActiveQuizId] = useState(null);
 	const [selectionError, setSelectionError] = useState(null);
+	const [searchSuggestionMap, setSearchSuggestionMap] = useState({});
 
 	useEffect(() => {
 		if (!isLoaded) return;
@@ -180,6 +210,7 @@ export default function QuizComponent() {
 		setShowAnswer(false);
 		setActiveQuizId(null);
 		setSelectionError(null);
+		setSearchSuggestionMap({});
 	};
 
 	const startQuiz = (type = "random", options = {}) => {
@@ -235,6 +266,7 @@ export default function QuizComponent() {
 		setQuizStarted(true);
 		setShowAnswer(false);
 		setSelectionError(null);
+		setSearchSuggestionMap({});
 	};
 
 	const handleAnswerSelect = (answer) => {
@@ -243,15 +275,42 @@ export default function QuizComponent() {
 		}
 	};
 
+	const prepareGrokSearchSuggestion = (question, questionIndex) => {
+		if (!question) return;
+
+		const url = buildGrokSearchUrl(question);
+		const descriptor = question.topic
+			? `Review ${question.topic} walk-throughs on Grokipedia.`
+			: "Explore similar explanations on Grokipedia.";
+
+		setSearchSuggestionMap((prev) => ({
+			...prev,
+			[questionIndex]: {
+				url,
+				title: "Keep learning with Grokipedia",
+				summary: descriptor,
+			},
+		}));
+	};
+
+	const openGrokSearch = (question) => {
+		if (!question) return;
+		const url = buildGrokSearchUrl(question);
+		if (typeof window !== "undefined") {
+			window.open(url, "_blank", "noopener");
+		}
+	};
+
 	const handleSubmitAnswer = () => {
 		const currentQuestion = questions[currentQuestionIndex];
 		if (!currentQuestion || !selectedAnswer) return;
 
 		const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+		const questionIndex = currentQuestionIndex;
 
 		setUserAnswers((prev) => ({
 			...prev,
-			[currentQuestionIndex]: {
+			[questionIndex]: {
 				selected: selectedAnswer,
 				correct: isCorrect,
 				correctAnswer: currentQuestion.correctAnswer,
@@ -260,6 +319,8 @@ export default function QuizComponent() {
 
 		if (isCorrect) {
 			setScore((prev) => prev + 1);
+		} else {
+			prepareGrokSearchSuggestion(currentQuestion, questionIndex);
 		}
 
 		setShowAnswer(true);
@@ -289,12 +350,21 @@ export default function QuizComponent() {
 
 			if (user?.id && total > 0) {
 				const quizMeta = activeQuizId ? availableQuizzes.find((quiz) => quiz.id === activeQuizId) : null;
+				const answersPayload = questions.reduce((acc, question, index) => {
+					if (!question?.id) return acc;
+					const entry = userAnswers[index];
+					acc[question.id] = entry?.selected ?? null;
+					return acc;
+				}, {});
 				recordQuizCompletion({
 					userId: user.id,
 					quizId: activeQuizId || `practice:${quizType}`,
 					score: Math.round((finalScore / total) * 100),
 					timeSpent: 0,
 					subject: quizMeta?.subjectId || "general",
+					correctAnswers: finalScore,
+					totalQuestions: total,
+					answers: answersPayload,
 				}).catch(() => {});
 			}
 
@@ -539,6 +609,9 @@ export default function QuizComponent() {
 		return null;
 	}
 
+	const currentSearchSuggestion = searchSuggestionMap[currentQuestionIndex];
+	const currentUserAnswer = userAnswers[currentQuestionIndex];
+
 	return (
 		<Card>
 			<CardHeader>
@@ -600,6 +673,37 @@ export default function QuizComponent() {
 				{showAnswer && currentQuestion.explanation && (
 					<div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
 						{currentQuestion.explanation}
+					</div>
+				)}
+
+				{showAnswer && currentUserAnswer && currentUserAnswer.correct === false && (
+					<div className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-3 text-sm text-indigo-900 space-y-2">
+						<div className="flex items-center gap-2 font-semibold text-indigo-800">
+							<Search className="w-4 h-4" />
+							<span>Explore more on Grokipedia</span>
+						</div>
+						{currentSearchSuggestion?.summary && (
+							<p className="text-xs leading-relaxed text-indigo-800">{currentSearchSuggestion.summary}</p>
+						)}
+						<div className="flex flex-wrap gap-2">
+							<Button
+								variant="outline"
+								size="xs"
+								onClick={() => openGrokSearch(currentQuestion)}
+							>
+								Open Grokipedia search
+							</Button>
+							{currentSearchSuggestion?.url && (
+								<a
+									href={currentSearchSuggestion.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 underline"
+								>
+									Open in new tab
+								</a>
+							)}
+						</div>
 					</div>
 				)}
 

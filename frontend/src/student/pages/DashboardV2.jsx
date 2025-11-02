@@ -6,29 +6,109 @@ import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { useUser } from '@clerk/nextjs';
 import { useI18n } from '@/i18n/useI18n';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import styles from './Dashboard.module.css';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
 import { fetchUserRole } from '@/lib/users';
-import { useSchoolContent } from '@/hooks/useApi';
+import { useSchoolContent, useStudentProgress } from '@/hooks/useApi';
 import SkillTrackCard from '../components/SkillTrackCard';
+import { askStudyBuddy } from '@/lib/api';
+import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { useRealtimeQuizProgress } from '@/hooks/useRealtimeQuizProgress';
+import { useStreak } from '@/hooks/useStreak';
+
+function formatRelativeTime(value) {
+  if (!value) return 'No activity yet';
+  const ts = new Date(value);
+  if (Number.isNaN(ts.getTime())) return 'No activity yet';
+  const diffMs = Date.now() - ts.getTime();
+  if (diffMs < 0) return ts.toLocaleString();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+  return ts.toLocaleDateString();
+}
+
+function normalizeScore(value) {
+  const numeric = typeof value === 'number' ? value : Number(value) || 0;
+  return Math.round(numeric * 10) / 10;
+}
+
+function calculateLevelMetrics({ totalQuizzes = 0, averageScore = 0 }) {
+  const xpTotal = Math.max(0, totalQuizzes * averageScore);
+  const xpPerLevel = 1000;
+  const level = Math.max(1, Math.floor(xpTotal / xpPerLevel) + 1);
+  const xpFloor = (level - 1) * xpPerLevel;
+  const xpIntoLevel = Math.min(xpPerLevel, Math.max(0, xpTotal - xpFloor));
+  const xpRemaining = Math.max(0, xpPerLevel - xpIntoLevel);
+
+  return {
+    level,
+    xpTotal,
+    xpIntoLevel,
+    xpRemaining,
+    xpPerLevel,
+  };
+}
+
+function sumTimeSpent(entries, { days = 7 } = {}) {
+  if (!Array.isArray(entries) || !entries.length) return 0;
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(start.getDate() - (days - 1));
+
+  return entries.reduce((acc, entry) => {
+    if (!entry?.submittedAt) return acc;
+    const submitted = new Date(entry.submittedAt);
+    if (Number.isNaN(submitted.getTime())) return acc;
+    if (submitted < start || submitted > now) return acc;
+    return acc + (Number(entry.timeSpent) || 0);
+  }, 0);
+}
 
 export default function DashboardV2({ user = {} }) {
   const { user: clerkUser, isLoaded: userLoaded } = useUser();
   const name = clerkUser?.fullName || clerkUser?.firstName || user.name || 'Student';
   const { t } = useI18n();
   const [gyanBotQuery, setGyanBotQuery] = useState('');
+  const [gyanBotHistory, setGyanBotHistory] = useState([]);
+  const [gyanBotLoading, setGyanBotLoading] = useState(false);
+  const [gyanBotError, setGyanBotError] = useState(null);
   const [schoolId, setSchoolId] = useState(null);
   const [roleError, setRoleError] = useState(null);
   // Use global theme from ThemeProvider directly to avoid sync loops
   const { theme = 'dark' } = useTheme();
 
+  const studentId = clerkUser?.id || null;
+  const {
+    progress: quizProgress,
+    loading: quizProgressLoading,
+    error: quizProgressError,
+    fetchProgress: fetchQuizProgress,
+  } = useStudentProgress(studentId);
+
+  const handleQuizProgressEvent = useCallback(() => {
+    if (!studentId) return;
+    fetchQuizProgress();
+  }, [studentId, fetchQuizProgress]);
+
+  useRealtimeQuizProgress({ studentId, onQuizEvent: handleQuizProgressEvent });
+
+  const { streakData } = useStreak(studentId);
+
   // Get user metadata from Clerk
   const userYear = clerkUser?.publicMetadata?.year || '3rd Year';
   const userBranch = clerkUser?.publicMetadata?.branch || 'CSE';
-  const userLevel = 10;
-  const userXP = 2150;
-  const maxXP = 3000;
 
   // Simulated AI-detected knowledge gap
   const detectedGap = 'Data Structures';
@@ -106,6 +186,88 @@ export default function DashboardV2({ user = {} }) {
       return String(value);
     }
   };
+
+  const renderFormattedText = (text) => {
+    if (!text) return null;
+    return (
+      <div className="space-y-2 text-[12px] leading-relaxed">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+            ul: ({ children }) => <ul className="mb-2 list-disc list-inside space-y-1 text-[12px]">{children}</ul>,
+            ol: ({ children }) => <ol className="mb-2 list-decimal list-inside space-y-1 text-[12px]">{children}</ol>,
+            strong: ({ children }) => <strong className="font-semibold text-indigo-100">{children}</strong>,
+          }}
+        >
+          {text}
+        </ReactMarkdown>
+      </div>
+    );
+  };
+
+  const recentRaw = quizProgress?.recentActivity;
+  const quizSummary = quizProgress?.summary || { totalQuizzes: 0, averageScore: 0, bestScore: 0 };
+  const recentAttempts = useMemo(() => {
+    const list = Array.isArray(recentRaw) ? recentRaw : [];
+    return list.slice(0, 5);
+  }, [recentRaw]);
+
+  const levelMetrics = useMemo(
+    () => calculateLevelMetrics({
+      totalQuizzes: quizSummary.totalQuizzes ?? 0,
+      averageScore: quizSummary.averageScore ?? 0,
+    }),
+    [quizSummary.totalQuizzes, quizSummary.averageScore]
+  );
+
+  const weeklyTimeSpentSeconds = useMemo(
+    () => sumTimeSpent(recentRaw, { days: 7 }),
+    [recentRaw]
+  );
+
+  const weeklyHours = Math.max(0, weeklyTimeSpentSeconds / 3600);
+  const resourceCount = Array.isArray(schoolContent) ? schoolContent.length : 0;
+  const totalQuizzesCompleted = quizSummary.totalQuizzes ?? 0;
+  const currentStreak = streakData?.currentStreak ?? 0;
+
+  const weeklyHoursDisplay = Number.isFinite(weeklyHours)
+    ? weeklyHours >= 1
+      ? `${weeklyHours.toFixed(1)} hrs`
+      : `${Math.round(weeklyHours * 60)} min`
+    : '--';
+
+  const streakDisplay = Number.isFinite(currentStreak)
+    ? `${currentStreak} ${currentStreak === 1 ? 'day' : 'days'}`
+    : '--';
+
+  async function handleGyanBotSubmit(prompt) {
+    const trimmed = (prompt ?? gyanBotQuery).trim();
+    if (!trimmed || gyanBotLoading) return;
+
+    const nextHistory = [...gyanBotHistory, { role: 'user', content: trimmed }].slice(-10);
+    setGyanBotHistory(nextHistory);
+    setGyanBotQuery('');
+    setGyanBotError(null);
+    setGyanBotLoading(true);
+
+    try {
+      const response = await askStudyBuddy({ question: trimmed, mode: 'answer', history: nextHistory });
+      const answer = response?.answer || 'I could not generate a response.';
+      setGyanBotHistory((prev) => [...prev.slice(-9), { role: 'assistant', content: answer }]);
+    } catch (error) {
+      setGyanBotError(error?.message || 'Unable to contact the AI assistant.');
+    } finally {
+      setGyanBotLoading(false);
+    }
+  }
+
+  function handleGyanBotKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleGyanBotSubmit();
+    }
+  }
 
   return (
   <div className={`min-h-screen pb-10 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 ${theme === 'dark' ? 'dark' : 'light'} ${styles.dashboardContainer} ${theme === 'light' ? styles.light : ''}`}>
@@ -378,20 +540,28 @@ export default function DashboardV2({ user = {} }) {
                 {/* Level & XP */}
                 <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-lg p-4 mb-4 border border-purple-600">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-white">Level {userLevel}</span>
-                    <span className="text-sm font-bold text-purple-300">{userXP} / {maxXP} XP</span>
+                    <span className="text-sm font-medium text-white">Level {levelMetrics.level}</span>
+                    <span className="text-sm font-bold text-purple-300">{Math.round(levelMetrics.xpIntoLevel)} / {levelMetrics.xpPerLevel} XP</span>
                   </div>
-                  <Progress value={(userXP / maxXP) * 100} className="h-3 mb-1" />
-                  <p className="text-xs text-gray-300 text-center">{maxXP - userXP} XP to Level {userLevel + 1}</p>
+                  <Progress value={levelMetrics.xpPerLevel ? (levelMetrics.xpIntoLevel / levelMetrics.xpPerLevel) * 100 : 0} className="h-3 mb-1" />
+                  <p className="text-xs text-gray-300 text-center">{Math.max(0, Math.round(levelMetrics.xpRemaining))} XP to Level {levelMetrics.level + 1}</p>
                 </div>
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'This Week', value: '4.5 hrs', icon: <Clock className="w-4 h-4" /> },
-                    { label: 'Lessons', value: '12', icon: <BookOpen className="w-4 h-4" /> },
-                    { label: 'Quizzes', value: '8', icon: <Trophy className="w-4 h-4" /> },
-                    { label: 'Streak', value: '18 days', icon: <TrendingUp className="w-4 h-4" /> },
+                    {
+                      label: 'This Week',
+                      value: weeklyHoursDisplay,
+                      icon: <Clock className="w-4 h-4" />,
+                    },
+                    { label: 'Resources', value: resourceCount, icon: <BookOpen className="w-4 h-4" /> },
+                    { label: 'Quizzes', value: totalQuizzesCompleted, icon: <Trophy className="w-4 h-4" /> },
+                    {
+                      label: 'Streak',
+                      value: streakDisplay,
+                      icon: <TrendingUp className="w-4 h-4" />,
+                    },
                   ].map((stat) => (
                     <div key={stat.label} className={`bg-slate-700 dark:bg-slate-800 border-2 border-slate-600 rounded-lg p-3 text-center hover:border-purple-400 transition-colors ${styles.statCard}`}>
                       <div className="flex items-center justify-center mb-1 text-purple-400">
@@ -404,6 +574,76 @@ export default function DashboardV2({ user = {} }) {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Quiz Progress Card */}
+            {studentId && (
+              <Card className="shadow-lg border-2 border-emerald-300/60 dark:border-emerald-800 bg-slate-800 dark:bg-slate-900">
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-emerald-300" />
+                      <h3 className="text-sm font-semibold text-white uppercase tracking-wide">My Quiz Progress</h3>
+                    </div>
+                    <Badge className="bg-emerald-600/30 text-emerald-200 border border-emerald-500/50">Live</Badge>
+                  </div>
+
+                  {quizProgressError && (
+                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                      {quizProgressError}
+                    </div>
+                  )}
+
+                  {!quizProgressError && (
+                    <>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+                          <div className="text-[10px] uppercase tracking-wide text-slate-400">Quizzes</div>
+                          <div className="text-lg font-bold text-white">{quizSummary.totalQuizzes ?? 0}</div>
+                        </div>
+                        <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+                          <div className="text-[10px] uppercase tracking-wide text-slate-400">Average</div>
+                          <div className="text-lg font-bold text-emerald-300">{normalizeScore(quizSummary.averageScore)}%</div>
+                        </div>
+                        <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+                          <div className="text-[10px] uppercase tracking-wide text-slate-400">Best</div>
+                          <div className="text-lg font-bold text-emerald-300">{normalizeScore(quizSummary.bestScore)}%</div>
+                        </div>
+                      </div>
+
+                      {quizProgressLoading && !recentAttempts.length ? (
+                        <div className="text-xs text-slate-300 text-center py-4">Loading your recent attempts...</div>
+                      ) : recentAttempts.length ? (
+                        <div className="space-y-2">
+                          {recentAttempts.map((attempt) => (
+                            <div
+                              key={attempt.id}
+                              className="flex items-center justify-between gap-3 rounded-lg bg-slate-900/50 border border-slate-700/60 px-3 py-2 text-xs text-slate-200"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-white truncate">{attempt.quizTitle}</div>
+                                <div className="text-[11px] text-slate-400 truncate">{formatRelativeTime(attempt.submittedAt)}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-bold text-emerald-300">{normalizeScore(attempt.score)}%</div>
+                                {attempt.correctAnswers != null && attempt.totalQuestions != null && (
+                                  <div className="text-[11px] text-slate-400">
+                                    {attempt.correctAnswers}/{attempt.totalQuestions} correct
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-slate-300 text-center py-4">
+                          You have not completed a quiz yet. Start one to see your progress here.
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Gyan-Bot Card */}
             <Card className={`shadow-lg border-2 border-indigo-200 dark:border-indigo-800 bg-slate-800 dark:bg-slate-900 ${styles.askGyanBot}`}>
@@ -424,10 +664,13 @@ export default function DashboardV2({ user = {} }) {
                     placeholder="Ask about any engineering concept..."
                     value={gyanBotQuery}
                     onChange={(e) => setGyanBotQuery(e.target.value)}
+                    onKeyDown={handleGyanBotKeyDown}
                     className="w-full px-4 py-3 pr-12 border-2 border-indigo-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-700 dark:bg-slate-900 text-white placeholder-gray-400"
                   />
                   <Button 
                     size="sm" 
+                    disabled={gyanBotLoading || !gyanBotQuery.trim()}
+                    onClick={() => handleGyanBotSubmit()}
                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
                   >
                     <Send className="w-4 h-4" />
@@ -438,11 +681,57 @@ export default function DashboardV2({ user = {} }) {
                   {['Binary Search', 'SQL Joins', 'Recursion'].map((suggestion) => (
                     <button 
                       key={suggestion}
+                      onClick={() => handleGyanBotSubmit(suggestion)}
                       className="px-3 py-1.5 text-xs bg-indigo-900/50 text-indigo-200 rounded-full hover:bg-indigo-800 border border-indigo-600"
                     >
                       {suggestion}
                     </button>
                   ))}
+                </div>
+
+                <Button
+                  asChild
+                  variant="outline"
+                  className="mt-4 w-full border-indigo-600 text-indigo-100 hover:bg-indigo-900/60 bg-transparent"
+                >
+                  <Link href="/student/study-buddy">Open Full Screen Study Buddy</Link>
+                </Button>
+
+                {gyanBotError && (
+                  <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                    {gyanBotError}
+                  </div>
+                )}
+
+                <div className="mt-4 max-h-56 overflow-y-auto space-y-3">
+                  {gyanBotHistory.length === 0 && !gyanBotLoading && (
+                    <p className="text-xs text-indigo-200/80">
+                      Try a quick question like "What is Big O notation?" or click a suggestion to begin.
+                    </p>
+                  )}
+
+                  {gyanBotHistory.map((entry, index) => (
+                    <div
+                      key={`${entry.role}-${index}`}
+                      className={`rounded-lg px-3 py-2 text-xs leading-relaxed ${
+                        entry.role === 'user'
+                          ? 'bg-indigo-900/60 text-indigo-100 border border-indigo-700'
+                          : 'bg-slate-900/70 text-indigo-100 border border-indigo-700/60'
+                      }`}
+                    >
+                      <span className="block font-semibold mb-1 text-[11px] uppercase tracking-wide">
+                        {entry.role === 'user' ? 'You' : 'Gyan-Bot'}
+                      </span>
+                      <span className="text-[12px] leading-relaxed">{renderFormattedText(entry.content)}</span>
+                    </div>
+                  ))}
+
+                  {gyanBotLoading && (
+                    <div className="flex items-center gap-2 text-xs text-indigo-200">
+                      <div className="h-2 w-2 animate-ping rounded-full bg-indigo-300" />
+                      Thinking...
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
