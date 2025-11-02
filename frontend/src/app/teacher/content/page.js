@@ -19,7 +19,6 @@ import { Loader2, PlusCircle, Pencil, Trash2, XCircle } from "lucide-react";
 
 const CONTENT_TYPES = [
   { value: "article", label: "Article" },
-  { value: "quiz", label: "Quiz" },
   { value: "video", label: "YouTube Video" },
   { value: "material", label: "Study Material" },
 ];
@@ -145,6 +144,19 @@ function ContentManager() {
       },
       {}
     );
+  }, [sortedContent]);
+
+  const selectOptions = useMemo(() => {
+    const base = CONTENT_TYPES.map((item) => ({ ...item, disabled: false }));
+    const existingTypes = new Set(sortedContent.map((item) => item.type).filter(Boolean));
+    const extras = Array.from(existingTypes)
+      .filter((type) => !base.some((option) => option.value === type))
+      .map((type) => ({
+        value: type,
+        label: type === "quiz" ? "Quiz (legacy)" : type.charAt(0).toUpperCase() + type.slice(1),
+        disabled: true,
+      }));
+    return [...base, ...extras];
   }, [sortedContent]);
 
   const handleChange = (field, value) => {
@@ -294,10 +306,11 @@ function ContentManager() {
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-50">
-                    {CONTENT_TYPES.map((item) => (
+                    {selectOptions.map((item) => (
                       <SelectItem
                         key={item.value}
                         value={item.value}
+                        disabled={item.disabled}
                         className="data-[highlighted]:bg-slate-100 data-[state=checked]:bg-violet-100"
                       >
                         {item.label}
@@ -345,14 +358,14 @@ function ContentManager() {
                 <Textarea
                   value={form.body}
                   onChange={(event) => handleChange("body", event.target.value)}
-                  placeholder="Paste study notes or quiz questions"
+                  placeholder="Paste study notes or key takeaways"
                   className="bg-white"
                   rows={6}
                 />
               </div>
             )}
 
-            {(form.type === "quiz" || form.type === "material" || form.type === "video") && (
+            {(form.type === "material" || form.type === "video") && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   {form.type === "video" ? "YouTube link" : "Resource link"}
@@ -410,6 +423,11 @@ function ContentManager() {
                 {item.label} <span className="font-semibold text-slate-900">{totalsByType[item.value] || 0}</span>
               </div>
             ))}
+            {totalsByType.quiz ? (
+              <div key="quiz-legacy">
+                Assessments <span className="font-semibold text-slate-900">{totalsByType.quiz}</span>
+              </div>
+            ) : null}
           </div>
 
           {contentError && (
@@ -511,7 +529,7 @@ function ContentManager() {
             </div>
           ) : (
             <div className="py-10 text-center text-slate-500">
-              No shared content yet. Use the form above to upload quizzes, videos, or study materials.
+              No shared content yet. Use the form above to upload articles, videos, or study materials.
             </div>
           )}
         </CardContent>

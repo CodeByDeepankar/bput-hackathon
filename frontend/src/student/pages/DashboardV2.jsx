@@ -1,4 +1,4 @@
-import { BookOpen, Sparkles, Star, Gift, Trophy, Zap, Target, Brain, Send, TrendingUp, Clock, Award, Database, Layers, Cpu, HardDrive } from 'lucide-react';
+import { BookOpen, Sparkles, Star, Gift, Trophy, Zap, Target, Brain, Send, TrendingUp, Clock, Award, Database, Layers, Cpu, HardDrive, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -17,11 +17,11 @@ import { fetchUserRole } from '@/lib/users';
 import { useSchoolContent, useStudentProgress } from '@/hooks/useApi';
 import SkillTrackCard from '../components/SkillTrackCard';
 import { askStudyBuddy } from '@/lib/api';
-import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useRealtimeQuizProgress } from '@/hooks/useRealtimeQuizProgress';
 import { useStreak } from '@/hooks/useStreak';
+import { RESOURCE_SECTION_ORDER, buildResourcePreview, extractYoutubeId, getResourceMeta, normalizeContentType } from '@student/utils/resourceHelpers';
 
 function formatRelativeTime(value) {
   if (!value) return 'No activity yet';
@@ -171,12 +171,41 @@ export default function DashboardV2({ user = {} }) {
     content: schoolContent,
     loading: contentLoading,
     error: contentError,
-  } = useSchoolContent(schoolId, { limit: 8 });
+  } = useSchoolContent(schoolId);
 
-  const latestContent = useMemo(() => {
+  const sortedSchoolContent = useMemo(() => {
     if (!Array.isArray(schoolContent)) return [];
-    return schoolContent.slice(0, 4);
+    return [...schoolContent].sort((a, b) => {
+      const aTs = new Date(a?.createdAt || 0).getTime();
+      const bTs = new Date(b?.createdAt || 0).getTime();
+      return bTs - aTs;
+    });
   }, [schoolContent]);
+
+  const groupedSchoolContent = useMemo(() => {
+    if (!sortedSchoolContent.length) return [];
+    const buckets = sortedSchoolContent.reduce((acc, item) => {
+      const key = normalizeContentType(item?.type);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+
+    return Object.entries(buckets)
+      .map(([type, items]) => {
+        const meta = getResourceMeta(type);
+        return { ...meta, items };
+      })
+      .sort((a, b) => {
+        const indexA = RESOURCE_SECTION_ORDER.indexOf(a.key);
+        const indexB = RESOURCE_SECTION_ORDER.indexOf(b.key);
+        const safeA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
+        const safeB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
+        if (safeA !== safeB) return safeA - safeB;
+        return a.label.localeCompare(b.label);
+      });
+  }, [sortedSchoolContent]);
+
 
   const formatContentDate = (value) => {
     if (!value) return '';
@@ -227,7 +256,7 @@ export default function DashboardV2({ user = {} }) {
   );
 
   const weeklyHours = Math.max(0, weeklyTimeSpentSeconds / 3600);
-  const resourceCount = Array.isArray(schoolContent) ? schoolContent.length : 0;
+  const resourceCount = sortedSchoolContent.length;
   const totalQuizzesCompleted = quizSummary.totalQuizzes ?? 0;
   const currentStreak = streakData?.currentStreak ?? 0;
 
@@ -344,7 +373,7 @@ export default function DashboardV2({ user = {} }) {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <h2 className="text-xl font-bold text-slate-800 dark:text-white">Teacher Shared Resources</h2>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">Latest quizzes, videos, and materials from your school</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">Latest articles, videos, and study materials from your school</p>
                   </div>
                   <Badge className="bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-200">School feed</Badge>
                 </div>
@@ -355,76 +384,112 @@ export default function DashboardV2({ user = {} }) {
                   </div>
                 )}
 
-                {!roleError && !schoolId && (
-                  <div className="text-sm text-slate-600 bg-slate-100 border border-slate-200 rounded-lg p-4 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
-                    Your account is not linked to a school yet. Ask your teacher to assign you to a class to see shared resources.
-                  </div>
-                )}
-
                 {schoolId && !roleError && (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {contentError && (
                       <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4 dark:bg-red-900/20 dark:border-red-900/40 dark:text-red-300">
                         {contentError}
                       </div>
                     )}
 
-                    {contentLoading && !latestContent.length ? (
+                    {contentLoading && !groupedSchoolContent.length ? (
                       <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-300">Loading resources...</div>
-                    ) : latestContent.length ? (
-                      latestContent.map((item) => {
-                        const preview = item.body || item.description || '';
-                        const showPreview = preview ? preview.slice(0, 220) + (preview.length > 220 ? '...' : '') : '';
+                    ) : groupedSchoolContent.length ? (
+                      groupedSchoolContent.map((section) => {
+                        const SectionIcon = section.icon;
                         return (
-                          <div key={item.id} className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-white/60 dark:bg-slate-800/80 shadow-sm space-y-3">
-                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{item.title}</h3>
-                                  <Badge className="bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-200 uppercase">{item.type}</Badge>
-                                </div>
-                                {showPreview && (
-                                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-wrap">{showPreview}</p>
-                                )}
-                                {Array.isArray(item.tags) && item.tags.length > 0 && (
-                                  <div className="flex flex-wrap gap-2 mt-2">
-                                    {item.tags.slice(0, 4).map((tag) => (
-                                      <span key={tag} className="text-xs px-2 py-1 bg-slate-200/80 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 rounded-full border border-slate-300/70 dark:border-slate-600/70">
-                                        #{tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
+                          <div key={section.key} className="space-y-3">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                <SectionIcon className="w-5 h-5 text-indigo-500" />
+                                <h3 className="text-lg font-semibold">{section.label}</h3>
                               </div>
-                              <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatContentDate(item.createdAt)}</div>
+                              <Badge className="bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-200">
+                                {section.items.length} {section.items.length === 1 ? 'item' : 'items'}
+                              </Badge>
                             </div>
+                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                              {section.items.map((item) => {
+                                const preview = buildResourcePreview(item);
+                                const youtubeId = extractYoutubeId(item.url);
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className="group relative border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-white/80 dark:bg-slate-800/70 shadow-sm flex flex-col gap-3"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="space-y-1">
+                                        <h4 className="text-base font-semibold text-slate-900 dark:text-white line-clamp-2">
+                                          {item.title}
+                                        </h4>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                                          {formatContentDate(item.createdAt)}
+                                        </div>
+                                      </div>
+                                      {Array.isArray(item.tags) && item.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 justify-end text-[10px] text-slate-500 dark:text-slate-300">
+                                          {item.tags.slice(0, 3).map((tag) => (
+                                            <span
+                                              key={tag}
+                                              className="px-2 py-1 bg-slate-100/80 dark:bg-slate-700/50 rounded-full border border-slate-200/80 dark:border-slate-600/70"
+                                            >
+                                              #{tag}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
 
-                            {item.type === 'video' && item.embedHtml && (
-                              <div
-                                className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700"
-                                dangerouslySetInnerHTML={{ __html: item.embedHtml }}
-                              />
-                            )}
+                                    {youtubeId ? (
+                                      <div className="aspect-video w-full overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                                        <iframe
+                                          src={`https://www.youtube.com/embed/${youtubeId}`}
+                                          title={item.title}
+                                          className="h-full w-full"
+                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                          allowFullScreen
+                                        />
+                                      </div>
+                                    ) : section.key === 'video' && item.embedHtml ? (
+                                      <div
+                                        className="aspect-video w-full overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700"
+                                        dangerouslySetInnerHTML={{ __html: item.embedHtml }}
+                                      />
+                                    ) : null}
 
-                            {item.url && (
-                              <div className="flex flex-wrap gap-3">
-                                <Button
-                                  size="sm"
-                                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                                  asChild
-                                >
-                                  <a href={item.url} target="_blank" rel="noreferrer">
-                                    Open resource
-                                  </a>
-                                </Button>
-                              </div>
-                            )}
+                                    {preview && (
+                                      <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-4">{preview}</p>
+                                    )}
+
+                                    {item.url && (
+                                      <a
+                                        href={item.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+                                      >
+                                        <ExternalLink className="w-4 h-4" />
+                                        Open resource
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       })
                     ) : (
-                      <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-300">
-                        Your teachers have not shared new resources yet.
+                      <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-300">No shared content yet.</div>
+                    )}
+
+                    {sortedSchoolContent.length > 0 && (
+                      <div className="flex justify-end">
+                        <Button variant="outline" size="sm" className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-200" asChild>
+                          <Link href="/student/resources" prefetch>
+                            Browse all resources
+                          </Link>
+                        </Button>
                       </div>
                     )}
                   </div>
