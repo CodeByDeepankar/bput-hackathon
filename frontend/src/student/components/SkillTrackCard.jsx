@@ -1,4 +1,5 @@
 import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { cn } from './ui/utils';
@@ -13,13 +14,14 @@ import { cn } from './ui/utils';
  * - onContinue?: () => void (optional action handlers)
  * - onPractice?: () => void
  */
-export default function SkillTrackCard({ title, icon, progress = 0, isRecommended = false, imageSrc, variant = 'compact', footer, onContinue, onPractice }) {
+export default function SkillTrackCard({ title, icon, progress = 0, isRecommended = false, imageSrc, variant = 'compact', footer, onContinue, onPractice, onContinueClick, className }) {
   return (
     <Card
       className={cn(
         'relative overflow-hidden border-2 transition-all',
         'bg-slate-700/60 dark:bg-slate-800/80 hover:border-purple-400',
-        isRecommended && 'border-purple-400 shadow-[0_0_0_3px_rgba(168,85,247,0.25)]'
+        isRecommended && 'border-purple-400 shadow-[0_0_0_3px_rgba(168,85,247,0.25)]',
+        className
       )}
     >
       {isRecommended && (
@@ -33,14 +35,21 @@ export default function SkillTrackCard({ title, icon, progress = 0, isRecommende
             </div>
             <div className="p-5">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-lg text-white truncate">{title}</h3>
+                <h3 className="font-semibold text-lg text-white truncate skillTitle">{title}</h3>
                 {isRecommended && (
                   <Badge className="bg-purple-600 text-white border-0 shadow-sm">AI Recommended</Badge>
                 )}
               </div>
-              <div className="text-sm text-gray-300 mb-2">{progress}% Mastered</div>
+              <div className="text-sm text-gray-300 mb-2 skillProgressText">{progress}% Mastered</div>
               <Progress value={progress} className="h-2.5 mb-1" />
               {footer}
+              {!footer && typeof onContinueClick === 'function' && (
+                <div className="mt-4">
+                  <Button size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" onClick={onContinueClick}>
+                    Continue Learning
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -60,16 +69,23 @@ export default function SkillTrackCard({ title, icon, progress = 0, isRecommende
             )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-lg text-white truncate">{title}</h3>
+                <h3 className="font-semibold text-lg text-white truncate skillTitle">{title}</h3>
                 {isRecommended && (
                   <Badge className="bg-purple-600 text-white border-0 shadow-sm">AI Recommended</Badge>
                 )}
               </div>
-              <div className="text-sm text-gray-300 mb-2">{progress}% Mastered</div>
+              <div className="text-sm text-gray-300 mb-2 skillProgressText">{progress}% Mastered</div>
               <Progress value={progress} className="h-2.5 mb-1" />
             </div>
           </div>
           {footer}
+          {!footer && typeof onContinueClick === 'function' && (
+            <div className="mt-4">
+              <Button size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" onClick={onContinueClick}>
+                Continue Learning
+              </Button>
+            </div>
+          )}
         </CardContent>
       )}
     </Card>

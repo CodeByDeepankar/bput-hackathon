@@ -11,12 +11,12 @@ export default function GoogleBannerSuppressor({ intervalMs = 1500 }) {
         if (frame) {
           frame.style.display = 'none';
           // Try removing entirely to avoid layout calculations
-          try { frame.parentNode && frame.parentNode.removeChild(frame); } catch {}
+          try { if (frame.parentNode && frame.isConnected) { frame.parentNode.removeChild(frame); } } catch {}
         }
         const bar = document.querySelector('.goog-te-banner-frame');
         if (bar) {
           bar.style.display = 'none';
-          try { bar.parentNode && bar.parentNode.removeChild(bar); } catch {}
+          try { if (bar.parentNode && bar.isConnected) { bar.parentNode.removeChild(bar); } } catch {}
         }
         // Tooltip / popup
         const tt = document.getElementById('goog-gt-tt');
