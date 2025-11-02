@@ -17,7 +17,6 @@ import { fetchUserRole } from '@/lib/users';
 import { useSchoolContent, useStudentProgress } from '@/hooks/useApi';
 import SkillTrackCard from '../components/SkillTrackCard';
 import { askStudyBuddy } from '@/lib/api';
-import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useRealtimeQuizProgress } from '@/hooks/useRealtimeQuizProgress';
@@ -716,7 +715,7 @@ export default function DashboardV2({ user = {} }) {
                       className={`rounded-lg px-3 py-2 text-xs leading-relaxed ${
                         entry.role === 'user'
                           ? 'bg-indigo-900/60 text-indigo-100 border border-indigo-700'
-                          : 'bg-slate-900/70 text-indigo-100 border border-indigo-700/60'
+                          : 'bg-white text-black border border-gray-200'
                       }`}
                     >
                       <span className="block font-semibold mb-1 text-[11px] uppercase tracking-wide">

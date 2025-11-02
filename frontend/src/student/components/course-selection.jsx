@@ -62,12 +62,38 @@ const courseContentMap = {
 		],
 		"Queue": [
 			{id : "l1", title: "L-1: Introduction to Queue in Data Structures", youtubeUrl: "https://www.youtube.com/embed/zp6pBNbUB2U?si=DzN64Tj1KxMhxHKJ" },
+			{id : "l2", title: "L-2: Array implementation of Queue", youtubeUrl: "https://www.youtube.com/embed/JlZX7xIBjl0?si=gByymFHStp4CPPXx" },
+			{id : "l3", title: "L-3: Introduction to Circular Queue", youtubeUrl: "https://www.youtube.com/embed/KqTJ5MAUj80?si=wp-mfLPxKm4G2ocB" },
+			{id : "l4", title: "L-4: operations on Circular Queue", youtubeUrl: "https://www.youtube.com/embed/rtxjrVpWVmI?si=Y7j5Set5_8JmUdqO" },
+			{id : "l5", title: "L-5: Double ended Queue", youtubeUrl: "https://www.youtube.com/embed/OnlgK0gjtB8?si=sClXsJdj4qIlIa0s" },
+			
+			
 		],
 		"Trees": [
+			{id : "l1", title: "L-1: introduction to trees", youtubeUrl: "https://www.youtube.com/embed/oI0QhFzBSRo?si=i6nhtHc7MTJDrhKy" },
+			{id : "l2", title: "L-2: Binary trees and its types", youtubeUrl: "https://www.youtube.com/embed/SCjfVE3bFik?si=kad79rIt1BfrK9mb" },
+			{id : "l3", title: "L-3: traversal in Binary tree", youtubeUrl: "https://www.youtube.com/embed/UbwkQmCWcDM?si=WzYNGAOZ4iJcun_t" },
+			{id : "l4", title: "L-4: Preorder/Postorder/Inorder traversal in Binary trees", youtubeUrl: "https://www.youtube.com/embed/VNegW_7OLS4?si=Err6MFTLB-JaMDoV" },
 		],
-		"Graph": [
-		],
+		 
 		// add other topics/lessons as needed
+	}
+	,
+	"Algorithms": {
+		"Sorting": [
+			{ id: "l1", title: "L-1: Sorting - Intro to Sorting", youtubeUrl: "https://www.youtube.com/embed/ByLlEk7zmyw?si=Y7UjH5LU0EiC24Mc" },
+			{ id: "l2", title: "L-2: Bubble sort algorithm", youtubeUrl: "https://www.youtube.com/embed/BJkpnxf5cfY?si=m7oBYDUHDmqo7GyS" },
+			{ id: "l3", title: "L-3: Selection sort algorithm", youtubeUrl: "https://www.youtube.com/embed/Jb8AYaYMxq4?si=HUmPBBxYrzOgNsnO" },
+			{ id: "l4", title: "L-4: quick sort algorithm", youtubeUrl: "https://www.youtube.com/embed/SN4x87ZdhGg?si=dCdomN7HelunO4c2" },
+			{ id: "l5", title: "L-5: mergesort sorting Algorithm", youtubeUrl: "https://www.youtube.com/embed/6Aqxv29RGPc?si=k4KCsE5DqkDIgkb5" },
+
+		],
+		"Recursion": [
+			{ id: "l1", title: "L-1: Recursion - Intro", youtubeUrl: "https://www.youtube.com/embed/3uKXlRjQwTQ" }
+		],
+		"Dynamic Programming": [
+			{ id: "l1", title: "L-1: Dynamic Programming - Intro", youtubeUrl: "https://www.youtube.com/embed/BJkpnxf5cfY?si=m7oBYDUHDmqo7GyS" }
+		]
 	}
 };
 
@@ -166,7 +192,7 @@ export default function CourseSelection() {
 				{ id: "stack", title: "Stack", youtubeUrl: "https://www.youtube.com/embed/5h4jYj3A9h8" },
 				{ id: "queue", title: "Queue", youtubeUrl: "https://www.youtube.com/embed/9X0m3C1Q2ZM" },
 				{ id: "trees", title: "Trees", youtubeUrl: "https://www.youtube.com/embed/X2LU6m7e3EY" },
-				{ id: "graph", title: "Graph", youtubeUrl: "https://www.youtube.com/embed/8j0UDiN7my4" }
+				 
 			],
 			"Algorithms": [
 				{ id: "sorting", title: "Sorting", youtubeUrl: "https://www.youtube.com/embed/ZZuD6iUe3Pc" },
