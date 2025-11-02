@@ -30,15 +30,42 @@ const courseContentMap = {
 		"Array": [
 			{ id: "l1", title: "Array Lecture 1: Intro to Arrays", youtubeUrl: "https://www.youtube.com/embed/bR0NYdmMg94?si=9WUSxLbc0fvKYpB5" },
 			{ id: "l2", title: "Array Lecture 2", youtubeUrl: "https://www.youtube.com/embed/-sktNalfrE0?si=rCRvcZhdlOxGyEFa" },
-			{ id: "l3", title: "L-3: Array Operations", youtubeUrl: "" },
-			{ id: "l4", title: "L-4: 2D Arrays", youtubeUrl: "" },
-			{ id: "l5", title: "L-5: Dynamic Arrays", youtubeUrl: "" },
-			{ id: "l6", title: "L-6: Practice Problems", youtubeUrl: "" },
-			{ id: "l7", title: "L-7: Conclusion", youtubeUrl: "" }
+			{ id: "l3", title: "L-3: Array Operations", youtubeUrl: "https://www.youtube.com/embed/Bnjbun-hiBk?si=1_sH_OqvXk3g9cj7" },
+			{ id: "l4", title: "L-4: 2D Arrays", youtubeUrl: "https://www.youtube.com/embed/sEiMDFdbPGo?si=GcUjpgKPcLJNn_BO" },
+			{ id: "l5", title: "L-5: Dynamic Arrays", youtubeUrl: "https://www.youtube.com/embed/q8j8EqCZcWM?si=2IClfzZ3J-8pGj_6" },
+			{ id: "l6", title: "L-6: Practice Problems", youtubeUrl: "https://www.youtube.com/embed/J7EhXvnixRM?si=E7IU5LaLaZa7xNCv" },
+			{ id: "l7", title: "L-7: Conclusion", youtubeUrl: "https://www.youtube.com/embed/aWKJ5lRgI3U?si=SBTYTXxe4w2cprR2" }
 		],
 		"LinkedList": [
-			{ id: "l1", title: "L-1: Intro to LinkedLists", youtubeUrl: "" }
-		]
+			{ id: "l1", title: "L-1: Intro to LinkedLists", youtubeUrl: "https://www.youtube.com/embed/TWMCMvfEAv4?si=xtbqm092tF2R-HhV" },
+			{ id: "l2", title: "L-2:  Creation and Traversal ", youtubeUrl: "https://www.youtube.com/embed/BHphhqL9EOE?si=BPplOKOeo1RHmMDN" },
+			{ id: "l3", title: "L-3: Insertion of a Node in a Linked List", youtubeUrl: "https://www.youtube.com/embed/ewCc7O2K5SM?si=ccNOwn6qe_4zKlxc" },
+			{ id: "l4", title: "L-4: Insertion in a Linked List", youtubeUrl: "https://www.youtube.com/embed/_PuIzVqJJbA?si=WwKpY7btPPS-BUHR" },
+			{ id: "l5", title: "L-5: Deletion in a Linked List", youtubeUrl: "https://www.youtube.com/embed/R_7qJzAWrMg?si=RfghT1ZT5VWxNe7b" },
+			{ id: "l6", title: "L-6: Delete a Node from Linked List ", youtubeUrl: "https://www.youtube.com/embed/UQIJNobtzVY?si=SaypDPcYEl3Rgpp6" },
+			{ id: "l7", title: "L-7: Circular Linked List and Operations in Data Structures", youtubeUrl: "https://www.youtube.com/embed/41lXYJID3OQ?si=mOl9KfYbzcEWKkaR" },
+			{ id: "l8", title: "L-8: Circular Linked Lists part 2", youtubeUrl: "https://www.youtube.com/embed/UclZxvnOQZc?si=g0gcZ21vGSStl9OO" },
+			{ id: "l9", title: "L-9: Practice Problems on Linked Lists", youtubeUrl: "https://www.youtube.com/embed/6wXZ_m3SbEs?si=c2cQLK42OthRn6fL" },
+			{ id: "l10", title: "L-10: Conclusion", youtubeUrl: "https://www.youtube.com/embed/APbaAIRzQns?si=_r0meJfjxPXfDLGZ" },
+		],
+		"Stack": [
+			{ id: "l1", title: "L-1: Introduction to Stack in Data Structures", youtubeUrl: "https://www.youtube.com/embed/-n2rVJE4vto?si=LTyBpQ83zYClJh2k" },
+			{ id: "l2", title: "L-2: LIFO Principle", youtubeUrl: "https://www.youtube.com/embed/VmsTAVpz0xo?si=4DjWPNO6HiUdJvyc" },
+			{ id: "l3", title: "L-3: Basic Operations", youtubeUrl: "https://www.youtube.com/embed/Flk5yrlx5Qo?si=v8TnLaQIi3z-kS38" },
+			{ id: "l4", title: "L-4: Auxiliary Operations", youtubeUrl: "https://www.youtube.com/embed/V4Wwuu05_t4?si=adKTcpGxSSEfQCCW" },
+			{ id: "l5", title: "L-5: Implementation", youtubeUrl: "https://www.youtube.com/embed/r2yHEW8HmBE?si=Q2Tb5DprEKIxdLSR" },
+			{ id: "l6", title: "L-6: Applications of Stack", youtubeUrl: "https://www.youtube.com/embed/7jLR-al8RaM?si=dJF1jPMlHxNnFjP2" },
+			{ id: "l7", title: "L-7: Practice Problems on Stack", youtubeUrl: "https://www.youtube.com/embed/ztsxdI-jCk4?si=N1jf30gXMDQWdRTV" },
+
+
+		],
+		"Queue": [
+			{id : "l1", title: "L-1: Introduction to Queue in Data Structures", youtubeUrl: "https://www.youtube.com/embed/zp6pBNbUB2U?si=DzN64Tj1KxMhxHKJ" },
+		],
+		"Trees": [
+		],
+		"Graph": [
+		],
 		// add other topics/lessons as needed
 	}
 };
@@ -408,57 +435,7 @@ export default function CourseSelection() {
 						{mainContent}
 					</section>
 
-					<section>
-						<div className="mb-5 flex flex-col gap-2">
-							<h2 className="text-xl font-bold text-white">{headingLabel}</h2>
-							<p className="text-sm text-gray-300">
-								{branchLabel}: {branchForDisplay} • {semesterDisplay}
-							</p>
-						</div>
-
-						{roleError && (
-							<div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-								{roleError}
-							</div>
-						)}
-
-						{subjectsError && (
-							<div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-								{subjectsError}
-							</div>
-						)}
-
-						{(roleLoading || subjectsLoading) && (
-							<div className="mb-4 text-sm text-gray-300">{loadingLabel}</div>
-						)}
-
-						{subjectCards.length === 0 && !subjectsLoading ? (
-							<div className="rounded-lg border border-white/10 bg-white/5 px-4 py-6 text-sm text-gray-300">
-								{emptyStateLabel}
-							</div>
-						) : (
-							<div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-								{subjectCards.map((track) => (
-									<SkillTrackCard
-										key={track.key}
-										title={track.title}
-										icon={track.icon}
-										progress={track.progress}
-										isRecommended={track.isRecommended}
-										footer={
-											track.summary ? (
-												<p className="mt-3 text-xs leading-relaxed text-gray-300">{track.summary}</p>
-											) : null
-										}
-									/>
-								))}
-							</div>
-						)}
-
-						{usingFallback && subjectCards.length > 0 && (
-							<div className="mt-4 text-xs text-gray-400">{fallbackNotice}</div>
-						)}
-					</section>
+					{/* Subject Tracks section removed per request (cards removed) */}
 				</CardContent>
 			</Card>
 
