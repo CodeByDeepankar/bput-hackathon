@@ -1,11 +1,18 @@
 import { BookOpen, Sparkles, Star, Gift, Trophy, Zap, Target, Brain, Send, TrendingUp, Clock, Award, Database, Layers, Cpu, HardDrive } from 'lucide-react';
+import Link from 'next/link';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { useUser } from '@clerk/nextjs';
 import { useI18n } from '@/i18n/useI18n';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useTheme } from '@/components/ThemeProvider';
+import styles from './Dashboard.module.css';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
 import { fetchUserRole } from '@/lib/users';
 import { useSchoolContent, useStudentProgress } from '@/hooks/useApi';
 import SkillTrackCard from '../components/SkillTrackCard';
@@ -79,6 +86,8 @@ export default function DashboardV2({ user = {} }) {
   const [gyanBotError, setGyanBotError] = useState(null);
   const [schoolId, setSchoolId] = useState(null);
   const [roleError, setRoleError] = useState(null);
+  // Use global theme from ThemeProvider directly to avoid sync loops
+  const { theme = 'dark' } = useTheme();
 
   const studentId = clerkUser?.id || null;
   const {
@@ -261,7 +270,7 @@ export default function DashboardV2({ user = {} }) {
   }
 
   return (
-    <div className="min-h-screen pb-10 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+  <div className={`min-h-screen pb-10 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 ${theme === 'dark' ? 'dark' : 'light'} ${styles.dashboardContainer} ${theme === 'light' ? styles.light : ''}`}>
       {/* Two-Column Layout Container */}
       <div className="max-w-[1600px] mx-auto px-4 pt-6">
   <div className="dashboard-layout flex flex-col lg:flex-row gap-6 max-w-full">
@@ -269,11 +278,11 @@ export default function DashboardV2({ user = {} }) {
           {/* ============================================================ */}
           {/* LEFT COLUMN - Main Feed (70%) */}
           {/* ============================================================ */}
-          <div className="main-feed w-full lg:w-3/4 space-y-6">
+          <div className={`main-feed w-full lg:w-3/4 space-y-6 ${styles.mainFeed}`}>
             
             {/* AI-Powered Hero Banner */}
             <Card
-              className="relative overflow-hidden bg-none border-2 border-purple-200 dark:border-purple-800 shadow-xl min-h-[220px] sm:min-h-[260px] md:min-h-[300px] bg-clip-border"
+              className={`relative overflow-hidden bg-none border-2 border-purple-200 dark:border-purple-800 shadow-xl min-h-[220px] sm:min-h-[260px] md:min-h-[300px] bg-clip-border ${styles.aiHeroBanner}`}
               style={{
                 backgroundImage: 'linear-gradient(135deg,#6366f1 0%, #7c3aed 45%, #ec4899 100%)',
                 WebkitBackgroundClip: 'border-box'
@@ -312,14 +321,17 @@ export default function DashboardV2({ user = {} }) {
                     size="lg"
                     variant="outline"
                     className="w-full sm:w-auto bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm font-semibold"
+                    asChild
                   >
-                    <Trophy className="w-4 h-4 mr-2" />
-                    Play {recommendedGame}
+                    <Link href="/games/big-o-runner" prefetch>
+                      <Trophy className="w-4 h-4 mr-2" />
+                      Play {recommendedGame}
+                    </Link>
                   </Button>
                 </div>
                 
                 {/* AI Insight Badge */}
-                <div className="mt-4 sm:mt-6 inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-sm border border-white/30">
+                <div className={`mt-4 sm:mt-6 inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-sm border border-white/30 ${styles.aiConfidence}`}>
                   <Zap className="w-4 h-4 text-yellow-300" />
                   <span>AI Confidence: 92% match for your learning style</span>
                 </div>
@@ -327,7 +339,7 @@ export default function DashboardV2({ user = {} }) {
             </Card>
 
             {/* Teacher Shared Content */}
-            <Card className="shadow-lg border-2 border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900">
+            <Card className={`shadow-lg border-2 border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 ${styles.teacherResources}`}>
               <CardContent className="p-6 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
@@ -421,7 +433,7 @@ export default function DashboardV2({ user = {} }) {
             </Card>
 
             {/* My Engineering Skill Tracks */}
-            <Card className="shadow-lg border-2 bg-slate-800 dark:bg-slate-900">
+            <Card className={`shadow-lg border-2 bg-slate-800 dark:bg-slate-900 ${styles.skillTracksSection}`}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
@@ -446,12 +458,15 @@ export default function DashboardV2({ user = {} }) {
                       icon={track.icon}
                       progress={track.progress}
                       isRecommended={track.isRecommended}
+                      className={styles.skillCard}
                       footer={(
                         <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                          <Button size="sm" className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white justify-center">
-                            Continue Learning
+                          <Button size="sm" className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white justify-center" asChild>
+                            <Link href={`/student/courses?subject=${encodeURIComponent(track.title)}`} prefetch>
+                              Continue Learning
+                            </Link>
                           </Button>
-                          <Button size="sm" variant="outline" className="w-full sm:w-auto border-gray-500 text-white hover:bg-slate-600">
+                          <Button size="sm" variant="outline" className={`w-full sm:w-auto border-gray-500 text-white hover:bg-slate-600 ${styles.practiceButton}`}>
                             <Trophy className="w-3 h-3 mr-1" />
                             Practice
                           </Button>
@@ -464,23 +479,40 @@ export default function DashboardV2({ user = {} }) {
             </Card>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {[
-                { label: 'Browse Courses', icon: <BookOpen className="w-5 h-5" />, color: 'from-blue-500 to-cyan-500' },
-                { label: 'Take Quiz', icon: <Trophy className="w-5 h-5" />, color: 'from-purple-500 to-pink-500' },
-                { label: 'Unlock Rewards', icon: <Gift className="w-5 h-5" />, color: 'from-orange-500 to-red-500' },
-                { label: 'Achievements', icon: <Star className="w-5 h-5" />, color: 'from-yellow-500 to-amber-500' },
+                { label: 'Browse Courses', icon: <BookOpen className="w-5 h-5" />, color: 'from-blue-500 to-cyan-500', href: '/student/courses' },
+                { label: 'Take Quiz', icon: <Trophy className="w-5 h-5" />, color: 'from-purple-500 to-pink-500', href: '/student/quiz' },
+                { label: 'Achievements', icon: <Star className="w-5 h-5" />, color: 'from-yellow-500 to-amber-500', href: '/student/achievements' },
               ].map((action) => (
-                <Button 
-                  key={action.label}
-                  variant="outline" 
-                  className="h-20 sm:h-24 w-full flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform border-2 border-slate-600 hover:border-purple-400 bg-slate-700 dark:bg-slate-800 text-white"
-                >
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${action.color} grid place-items-center text-white`}>
-                    {action.icon}
-                  </div>
-                  <span className="text-sm font-medium">{action.label}</span>
-                </Button>
+                action.href ? (
+                  <Button 
+                    key={action.label}
+                    variant="outline" 
+                    className={`h-20 sm:h-24 w-full flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform border-2 border-slate-600 hover:border-purple-400 bg-slate-700 dark:bg-slate-800 text-white ${styles.quickActionsCard}`}
+                    asChild
+                  >
+                    <Link href={action.href} prefetch>
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${action.color} grid place-items-center text-white`}>
+                          {action.icon}
+                        </div>
+                        <span className="text-sm font-medium">{action.label}</span>
+                      </div>
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button 
+                    key={action.label}
+                    variant="outline" 
+                    className={`h-20 sm:h-24 w-full flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform border-2 border-slate-600 hover:border-purple-400 bg-slate-700 dark:bg-slate-800 text-white ${styles.quickActionsCard}`}
+                  >
+                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${action.color} grid place-items-center text-white`}>
+                      {action.icon}
+                    </div>
+                    <span className="text-sm font-medium">{action.label}</span>
+                  </Button>
+                )
               ))}
             </div>
 
@@ -489,10 +521,10 @@ export default function DashboardV2({ user = {} }) {
           {/* ============================================================ */}
           {/* RIGHT COLUMN - Sidebar (30%) */}
           {/* ============================================================ */}
-          <div className="sidebar w-full lg:w-1/4 space-y-6 lg:sticky lg:top-20">
+          <div className={`sidebar w-full lg:w-1/4 space-y-6 lg:sticky lg:top-20 ${styles.sidebar}`}>
             
             {/* Student Profile Card */}
-            <Card className="shadow-xl border-2 border-purple-200 dark:border-purple-800 overflow-hidden bg-slate-800 dark:bg-slate-900">
+            <Card className={`shadow-xl border-2 border-purple-200 dark:border-purple-800 overflow-hidden bg-slate-800 dark:bg-slate-900 ${styles.profileCard}`}>
               <div className="h-20 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600" />
               {/* avoid negative overlap on small screens to prevent hero/content overlap */}
               <CardContent className="p-6 mt-0 md:-mt-10">
@@ -500,8 +532,8 @@ export default function DashboardV2({ user = {} }) {
                   {name.charAt(0)}
                 </div>
                 
-                <h3 className="text-xl font-bold mb-1 text-white">{name}</h3>
-                <p className="text-sm text-gray-300 mb-4">
+                <h3 className={`text-xl font-bold mb-1 text-white ${styles.userName}`}>{name}</h3>
+                <p className={`text-sm text-gray-300 mb-4 ${styles.userRole}`}>
                   {userYear} B.Tech - {userBranch}
                 </p>
                 
@@ -531,12 +563,12 @@ export default function DashboardV2({ user = {} }) {
                       icon: <TrendingUp className="w-4 h-4" />,
                     },
                   ].map((stat) => (
-                    <div key={stat.label} className="bg-slate-700 dark:bg-slate-800 border-2 border-slate-600 rounded-lg p-3 text-center hover:border-purple-400 transition-colors">
+                    <div key={stat.label} className={`bg-slate-700 dark:bg-slate-800 border-2 border-slate-600 rounded-lg p-3 text-center hover:border-purple-400 transition-colors ${styles.statCard}`}>
                       <div className="flex items-center justify-center mb-1 text-purple-400">
                         {stat.icon}
                       </div>
-                      <div className="text-xs text-gray-300 mb-1">{stat.label}</div>
-                      <div className="text-lg font-bold text-white">{stat.value}</div>
+                      <div className={`text-xs text-gray-300 mb-1 ${styles.statLabel}`}>{stat.label}</div>
+                      <div className={`text-lg font-bold text-white ${styles.statValue}`}>{stat.value}</div>
                     </div>
                   ))}
                 </div>
@@ -614,7 +646,7 @@ export default function DashboardV2({ user = {} }) {
             )}
 
             {/* Gyan-Bot Card */}
-            <Card className="shadow-lg border-2 border-indigo-200 dark:border-indigo-800 bg-slate-800 dark:bg-slate-900">
+            <Card className={`shadow-lg border-2 border-indigo-200 dark:border-indigo-800 bg-slate-800 dark:bg-slate-900 ${styles.askGyanBot}`}>
               <CardContent className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 grid place-items-center text-white shadow-lg">
@@ -705,7 +737,7 @@ export default function DashboardV2({ user = {} }) {
             </Card>
 
             {/* Today's AI Challenge */}
-            <Card className="shadow-lg border-2 border-orange-200 dark:border-orange-800 bg-slate-800 dark:bg-slate-900">
+            <Card className={`shadow-lg border-2 border-orange-200 dark:border-orange-800 bg-slate-800 dark:bg-slate-900 ${styles.challengeCard}`}>
               <CardContent className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 grid place-items-center text-2xl shadow-lg">
@@ -732,7 +764,7 @@ export default function DashboardV2({ user = {} }) {
             </Card>
 
             {/* Recent Activity */}
-            <Card className="shadow-lg bg-slate-800 dark:bg-slate-900">
+            <Card className={`shadow-lg bg-slate-800 dark:bg-slate-900 ${styles.recentActivityCard}`}>
               <CardContent className="p-5">
                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-white">
                   <Award className="w-5 h-5 text-purple-400" />
@@ -746,7 +778,7 @@ export default function DashboardV2({ user = {} }) {
                     { title: 'Algorithm Master Badge', time: '2 days ago', icon: '🏆', color: 'bg-yellow-500/20 text-yellow-300 border border-yellow-500' },
                     { title: 'Computer Networks Lab', time: '3 days ago', icon: '🌐', color: 'bg-purple-500/20 text-purple-300 border border-purple-500' },
                   ].map((activity) => (
-                    <div key={activity.title} className="flex items-center gap-3 p-3 rounded-lg border-2 border-slate-600 hover:border-purple-400 transition-colors bg-slate-700 dark:bg-slate-800">
+                    <div key={activity.title} className={`flex items-center gap-3 p-3 rounded-lg border-2 border-slate-600 hover:border-purple-400 transition-colors bg-slate-700 dark:bg-slate-800 ${styles.recentActivityItem}`}>
                       <div className={`w-10 h-10 rounded-lg ${activity.color} grid place-items-center text-lg`}>
                         {activity.icon}
                       </div>

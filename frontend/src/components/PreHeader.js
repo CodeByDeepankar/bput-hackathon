@@ -95,7 +95,7 @@ export default function PreHeader({ included = "en,as,bn,gu,hi,kn,ml,mr,ne,or,pa
       if (window.matchMedia && window.matchMedia('(max-width: 640px)').matches) {
         const mo = new MutationObserver(() => {
           const frame = document.querySelector('iframe.goog-te-menu-frame');
-          if (frame && frame.parentNode) {
+          if (frame && frame.parentNode && frame.isConnected) {
             try {
               frame.parentNode.removeChild(frame);
             } catch (error) {
@@ -118,7 +118,7 @@ export default function PreHeader({ included = "en,as,bn,gu,hi,kn,ml,mr,ne,or,pa
       if (iframe) {
         iframe.style.display = 'none';
         try {
-          iframe.parentNode && iframe.parentNode.removeChild(iframe);
+          if (iframe.parentNode && iframe.isConnected) { iframe.parentNode.removeChild(iframe); }
         } catch (error) {
           // ignore removal failures
         }
@@ -127,7 +127,7 @@ export default function PreHeader({ included = "en,as,bn,gu,hi,kn,ml,mr,ne,or,pa
       if (banner) {
         banner.style.display = 'none';
         try {
-          banner.parentNode && banner.parentNode.removeChild(banner);
+          if (banner.parentNode && banner.isConnected) { banner.parentNode.removeChild(banner); }
         } catch (error) {
           // ignore removal failures
         }
@@ -136,7 +136,7 @@ export default function PreHeader({ included = "en,as,bn,gu,hi,kn,ml,mr,ne,or,pa
       if (tt) {
         tt.style.display = 'none';
         try {
-          tt.parentNode && tt.parentNode.removeChild(tt);
+          if (tt.parentNode && tt.isConnected) { tt.parentNode.removeChild(tt); }
         } catch (error) {
           // ignore removal failures
         }

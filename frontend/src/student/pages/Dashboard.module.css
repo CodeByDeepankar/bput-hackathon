@@ -1,0 +1,158 @@
+/* TASK: Add all styles for the new "light" theme */
+/* GOAL: Create a "floating card" design for light mode */
+
+/* --- 1. Default Dark Theme Styles (Your existing styles) --- */
+/* Your existing CSS is the "dark" theme by default */
+.dashboardContainer {
+  background-color: #b6ccf9; /* current dark background */
+  color: white;
+}
+
+.profileCard,
+.skillTracksSection,
+.teacherResources,
+.askGyanBot {
+  background-color: #2d3748; /* dark card color */
+  border: 1px solid #4a5568;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+/* Optional tokens for elements inside the profile card */
+/* class hooks referenced in JSX (styles only provided in light overrides) */
+
+
+/* --- 2. NEW Light Theme Styles --- */
+/* These styles override when the .light class is present on the same element
+   as .dashboardContainer or one of its descendants */
+
+/* When the same element has both classes (container owns the light class) */
+.dashboardContainer.light {
+  background-color: #ffffff !important; /* Pure white main background */
+  background-image: none !important;    /* Kill Tailwind gradient in light */
+  color: #000000 !important;            /* Default text black */
+}
+
+/* Floating white cards in light mode */
+.light .profileCard,
+.light .skillTracksSection,
+.light .teacherResources,
+.light .askGyanBot {
+  background-color: #ffffff;             /* White cards */
+  border: 1px solid #e2e8f0;             /* Light gray border */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Soft shadow */
+}
+
+/* --- Expanded light overrides for all components --- */
+/* Make all cards white in light mode (ensure priority over Tailwind bg-*) */
+.light .profileCard,
+.light .teacherResources,
+.light .skillTracksSection,
+.light .askGyanBot,
+.light .challengeCard,
+.light .recentActivityCard,
+.light .quickActionsCard,
+.light .statCard,
+.light .skillCard {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  color: #000000; /* Text black inside cards */
+}
+
+/* Force text inside key cards/sections to be black in light mode,
+   overriding Tailwind utility classes like text-white/text-gray-* */
+.light .profileCard :where(h1,h2,h3,h4,h5,h6,p,span,div,a,button,small,strong,label),
+.light .teacherResources :where(h1,h2,h3,h4,h5,h6,p,span,div,a,button,small,strong,label),
+.light .skillTracksSection :where(h1,h2,h3,h4,h5,h6,p,span,div,a,button,small,strong,label),
+.light .askGyanBot :where(h1,h2,h3,h4,h5,h6,p,span,div,a,button,small,strong,label),
+.light .challengeCard :where(h1,h2,h3,h4,h5,h6,p,span,div,a,button,small,strong,label),
+.light .recentActivityCard :where(h1,h2,h3,h4,h5,h6,p,span,div,a,button,small,strong,label),
+.light .quickActionsCard :where(h1,h2,h3,h4,h5,h6,p,span,div,a,button,small,strong,label),
+.light .statCard :where(h1,h2,h3,h4,h5,h6,p,span,div,a,button,small,strong,label),
+.light .skillCard :where(h1,h2,h3,h4,h5,h6,p,span,div,a,button,small,strong,label) {
+  color: #000000 !important;
+}
+
+/* Sidebar container */
+.light .sidebar {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(204, 196, 196, 0.05);
+}
+
+/* Main feed area stays transparent, cards float */
+.light .mainFeed {
+  background-color: transparent !important;
+}
+
+/* Fix text colors for light mode (scoped under container) */
+.light h1,
+.light h2,
+.light h3,
+.light h4,
+.light p,
+.light span,
+.light .userName,
+.light .userRole,
+.light .statValue,
+.light .statLabel,
+.light .skillTitle,
+.light .skillProgressText {
+  color: #000000; /* Headings, body text all black */
+}
+
+.light .userRole,
+.light .statCard {
+  background-color: #edf2f7; /* Light gray tag bg */
+  color: #000000;           /* Dark text */
+}
+
+/* Slightly darker text values to stand out */
+.light .statValue { color: #000000; }
+.light .statLabel { color: #000000; }
+
+/* Ask Gyan Bot input overrides */
+.light .askGyanBot input {
+  background-color: #f4f7fa;
+  border: 1px solid #e2e8f0;
+  color: #1a202c;
+}
+
+/* Recent activity pill colors: keep chip background but ensure text readable */
+.light .recentActivityCard .text-gray-300,
+.light .recentActivityCard .text-white {
+  color: #000000 !important;
+}
+
+/* Recent activity rows: make row backgrounds white and borders light */
+.light .recentActivityItem {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Quick actions: ensure button label text is black in light mode */
+.light .quickActionsCard span,
+.light .quickActionsCard .text-white,
+.light .quickActionsCard .text-gray-300 {
+  color: #000000 !important;
+}
+
+/* Ensure Practice button text is black in light mode */
+.light .practiceButton {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+.light .practiceButton:hover {
+  color: #000000 !important;
+  background-color: #f4f7fa !important;
+}
+
+/* Ensure brand colors are still visible */
+/* purple gradient banner is styled inline/Tailwind; no extra overrides */
+
+/* This text is on the purple banner, so it MUST stay white in light mode */
+.light .aiConfidence {
+  color: #ffffff !important;
+}

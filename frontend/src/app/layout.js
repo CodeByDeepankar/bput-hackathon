@@ -41,11 +41,20 @@ export default function RootLayout({ children }) {
               var hide = function(){
                 try {
                   var iframe = document.querySelector('iframe.goog-te-banner-frame');
-                  if (iframe) { iframe.style.display='none'; iframe.parentNode && iframe.parentNode.removeChild(iframe); }
+                  if (iframe) {
+                    iframe.style.display='none';
+                    try { if (iframe.parentNode && iframe.isConnected) { iframe.parentNode.removeChild(iframe); } } catch(e){}
+                  }
                   var bar = document.querySelector('.goog-te-banner-frame');
-                  if (bar) { bar.style.display='none'; bar.parentNode && bar.parentNode.removeChild(bar); }
+                  if (bar) {
+                    bar.style.display='none';
+                    try { if (bar.parentNode && bar.isConnected) { bar.parentNode.removeChild(bar); } } catch(e){}
+                  }
                   var tt = document.getElementById('goog-gt-tt');
-                  if (tt) { tt.style.display='none'; tt.parentNode && tt.parentNode.removeChild(tt); }
+                  if (tt) {
+                    tt.style.display='none';
+                    try { if (tt.parentNode && tt.isConnected) { tt.parentNode.removeChild(tt); } } catch(e){}
+                  }
                 } catch(e){}
               };
               hide();

@@ -6,6 +6,8 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Silence monorepo root inference warning; set tracing root to repo root
+  outputFileTracingRoot: path.resolve(__dirname, '..'),
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,

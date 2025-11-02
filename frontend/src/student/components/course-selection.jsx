@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { FaArrowLeft } from "react-icons/fa";
 import {
@@ -106,6 +107,8 @@ function normalizeSemester(value) {
 }
 
 export default function CourseSelection() {
+    const router = useRouter();
+	const searchParams = useSearchParams();
 	const { t } = useI18n();
 	const translate = useCallback(
 		(path, fallback) => {
@@ -217,7 +220,7 @@ export default function CourseSelection() {
 	const mainContent = !selectedSubject ? (
 		<div className={styles.skillTracksGrid}>
 			{cseSkillTracks.map((track) => (
-				<div key={track.title} onClick={() => setSelectedSubject(track.title)} className="cursor-pointer">
+				<div key={track.title}>
 					<SkillTrackCard
 						title={track.title}
 						icon={track.icon}
@@ -225,6 +228,7 @@ export default function CourseSelection() {
 						isRecommended={track.isRecommended}
 						imageSrc={track.imageSrc}
 						variant="image-cover"
+						onContinueClick={() => setSelectedSubject(track.title)}
 					/>
 				</div>
 			))}
@@ -233,7 +237,19 @@ export default function CourseSelection() {
 		<section>
 			{!selectedTopic ? (
 				<>
-					<button onClick={() => setSelectedSubject(null)} className="mb-4 inline-flex items-center gap-2 text-sm text-gray-300">
+					<button
+						onClick={() => {
+							// If user arrived via deep link (subject query) or has history, prefer real browser back
+							const cameFromDeepLink = Boolean(searchParams?.get('subject'));
+							if (cameFromDeepLink && typeof window !== 'undefined' && window.history.length > 1) {
+								router.back();
+								return;
+							}
+							// Otherwise just go back to the subjects list inside this page
+							setSelectedSubject(null);
+						}}
+						className="mb-4 inline-flex items-center gap-2 text-sm text-gray-300"
+					>
 						<FaArrowLeft /> Back to Courses
 					</button>
 					<h3 className="mb-2 text-lg font-semibold text-white">{selectedSubject}</h3>
@@ -268,6 +284,8 @@ export default function CourseSelection() {
 			)}
 		</section>
 	);
+
+	// (preselect moved below subjectLineup definition)
 
 	const [roleDoc, setRoleDoc] = useState(null);
 	const [roleError, setRoleError] = useState(null);
@@ -387,6 +405,22 @@ export default function CourseSelection() {
 		() => (normalizedSubjects.length > 0 ? normalizedSubjects : fallbackSubjects),
 		[normalizedSubjects, fallbackSubjects]
 	);
+
+		// Preselect subject when arriving from Dashboard links: /student/courses?subject=Algorithms
+		useEffect(() => {
+			const subjectParam = searchParams?.get('subject');
+			if (!subjectParam || selectedSubject) return;
+			const paramLower = subjectParam.toLowerCase();
+			const lineupMatch = subjectLineup.find((s) => (s.name || s.title)?.toLowerCase() === paramLower);
+			if (lineupMatch) {
+				setSelectedSubject(lineupMatch.name || lineupMatch.title);
+				return;
+			}
+			const fallbackMatch = cseSkillTracks.find((t) => t.title.toLowerCase() === paramLower);
+			if (fallbackMatch) {
+				setSelectedSubject(fallbackMatch.title);
+			}
+		}, [searchParams, selectedSubject, subjectLineup, cseSkillTracks]);
 
 	const subjectCards = useMemo(() => {
 		return subjectLineup.map((subject, index) => {
