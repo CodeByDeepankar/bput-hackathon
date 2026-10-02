@@ -11,6 +11,8 @@ import { useI18n } from '@/i18n/useI18n';
 import { useTheme } from '@/components/ThemeProvider';
 import styles from './Dashboard.module.css';
 
+import SkillTrackCard from '../components/SkillTrackCard';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { fetchUserRole } from '@/lib/users';
