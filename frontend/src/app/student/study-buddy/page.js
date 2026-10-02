@@ -2,6 +2,8 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { askStudyBuddy } from '@/lib/api';
+import { fetchUserRole } from '@/lib/users';
+import { buildUserContext } from '@/lib/chatbot/buildContext';
 import { useI18n } from '@/i18n/useI18n';
 import { useUser } from '@clerk/nextjs';
 import ReactMarkdown from 'react-markdown';
@@ -10,6 +12,7 @@ import remarkGfm from 'remark-gfm';
 export default function StudyBuddyPage() {
   const { user } = useUser();
   const { t } = useI18n();
+  const [userProfile, setUserProfile] = useState(null);
   const [history, setHistory] = useState([]); // {role:'user'|'assistant', content:string}
   const [input, setInput] = useState('');
   const [mode, setMode] = useState('answer');
@@ -17,7 +20,22 @@ export default function StudyBuddyPage() {
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [history]);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [history]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    fetchUserRole(user.id)
+      .then((roleDoc) => {
+        if (active && roleDoc) setUserProfile(roleDoc);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   const renderFormattedText = (text) => {
     if (!text) return null;
@@ -39,17 +57,18 @@ export default function StudyBuddyPage() {
   };
 
   async function send() {
-    if (!input.trim()) return;
+    if (loading || !input.trim()) return;
     const question = input.trim();
     setInput('');
     setHistory(h => [...h, { role: 'user', content: question }]);
     setLoading(true);
     setError(null);
     try {
-      const response = await askStudyBuddy({ question, mode, history });
+      const userContext = buildUserContext(user, userProfile, { route: '/student/study-buddy' });
+      const response = await askStudyBuddy({ question, mode, history, userContext });
       setHistory(h => [...h, { role: 'assistant', content: response.answer }]);
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Sorry, I'm having trouble connecting right now. Please try again.");
     } finally {
       setLoading(false);
     }

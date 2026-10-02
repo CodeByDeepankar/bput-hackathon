@@ -6,8 +6,7 @@ export default function SignUpPage() {
     <SignUp
       routing="path"
       path="/sign-up"
-      afterSignInUrl="/student"
-      afterSignUpUrl="/student"
+      fallbackRedirectUrl="/"
     />
   );
 }

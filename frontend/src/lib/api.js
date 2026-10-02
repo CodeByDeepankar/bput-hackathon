@@ -284,11 +284,11 @@ class ApiClient {
   // ===========================================
   // AI STUDY BUDDY
   // ===========================================
-  async askStudyBuddy({ question, mode = 'answer', history = [] }) {
+  async askStudyBuddy({ question, mode = 'answer', history = [], userContext = {} }) {
     try {
       return await this.request('/ai/study-buddy', {
         method: 'POST',
-        body: { question, mode, history }
+        body: { question, mode, history, userContext }
       });
     } catch (e) {
       console.error('askStudyBuddy failed', e);

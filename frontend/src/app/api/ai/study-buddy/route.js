@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { formatPromptWithContext } from "@/lib/chatbot/buildContext";
 
 export const runtime = "nodejs";
 
+const DEEPBOT_API_URL = process.env.DEEPBOT_API_URL || "https://deepbot-backend.vercel.app/api/v1/chat";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = (process.env.GEMINI_MODEL || "gemini-2.0-flash").trim();
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
@@ -23,6 +25,36 @@ function aiRateGuard(ip) {
     error.statusCode = 429;
     throw error;
   }
+}
+
+async function callDeepBot(question, userContext = {}) {
+  const formattedPrompt = formatPromptWithContext(question, userContext);
+  
+  const response = await fetch(DEEPBOT_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: formattedPrompt,
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "");
+    const err = new Error(`DeepBot API error ${response.status}: ${errText.slice(0, 200)}`);
+    err.statusCode = response.status >= 500 ? 502 : response.status;
+    throw err;
+  }
+
+  const payload = await response.json();
+  const reply = payload?.data?.reply || payload?.reply || payload?.answer || payload?.message;
+
+  if (reply) {
+    return reply;
+  }
+
+  throw new Error("Invalid or empty response from DeepBot API.");
 }
 
 function withLatestVariant(model) {
@@ -106,12 +138,10 @@ async function callGemini(question, mode, history = []) {
         const text = await response.text();
         lastErrorText = `Gemini error ${response.status}: ${text.slice(0, 200)}`;
 
-        // Retry with next candidate only when the model is missing/unsupported (404 / 400)
         if (response.status !== 404 && response.status !== 400) {
           abortOuter = true;
           break;
         }
-        // stop retry loop if model unsupported, switch to next candidate
         break;
       } catch (networkError) {
         lastErrorText = `Gemini network error: ${networkError.message}`;
@@ -289,7 +319,7 @@ async function buildRemediationPayload(answer, fallbackQuery) {
   return {
     title,
     url: `https://www.youtube.com/watch?v=${video.videoId}`,
-  summary: truncate(summarySource || "Watch this short video to reinforce the concept.", 180),
+    summary: truncate(summarySource || "Watch this short video to reinforce the concept.", 180),
     channel: video.channelTitle,
     thumbnails: video.thumbnails,
     searchQuery: sanitizedQuery,
@@ -298,15 +328,15 @@ async function buildRemediationPayload(answer, fallbackQuery) {
 
 export async function POST(request) {
   try {
-    const { question, mode = "answer", history = [] } = await request.json();
+    const { question, mode = "answer", history = [], userContext = {} } = await request.json();
     const trimmed = question?.trim();
 
     if (!trimmed) {
       return NextResponse.json({ error: "Please enter a question." }, { status: 400 });
     }
-    if (trimmed.length < 3) {
+    if (trimmed.length < 2) {
       return NextResponse.json(
-        { error: "Add a little more detail so I can help (min 3 characters)." },
+        { error: "Add a little more detail so I can help (min 2 characters)." },
         { status: 400 }
       );
     }
@@ -318,12 +348,22 @@ export async function POST(request) {
     aiRateGuard(ip);
 
     console.log(
-      `[AI] mode=${mode} len=${trimmed.length} sample="${trimmed
+      `[DeepBot AI] mode=${mode} len=${trimmed.length} sample="${trimmed
         .slice(0, 40)
         .replace(/\n/g, " ")}"`
     );
 
-    const answer = await callGemini(trimmed, mode, Array.isArray(history) ? history : []);
+    let answer = null;
+    try {
+      answer = await callDeepBot(trimmed, userContext);
+    } catch (deepBotErr) {
+      console.warn("[DeepBot API warn] DeepBot call failed, attempting fallback:", deepBotErr.message);
+      if (GEMINI_API_KEY) {
+        answer = await callGemini(trimmed, mode, Array.isArray(history) ? history : []);
+      } else {
+        throw deepBotErr;
+      }
+    }
 
     if (mode === "remediation") {
       try {
@@ -341,13 +381,9 @@ export async function POST(request) {
 
     return NextResponse.json({ answer, mode });
   } catch (error) {
-    console.error("AI error", error);
-    if (error.statusCode) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
-    }
-    if (/Gemini error/i.test(error.message || "")) {
-      return NextResponse.json({ error: error.message }, { status: 502 });
-    }
-    return NextResponse.json({ error: error.message || "Unknown AI error" }, { status: 500 });
+    return NextResponse.json(
+      { error: process.env.NODE_ENV === "development" ? (error.message || friendlyError) : friendlyError },
+      { status: error.statusCode || 502 }
+    );
   }
 }

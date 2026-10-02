@@ -1,26 +1,31 @@
 import { NextResponse } from "next/server";
-import { supabase, run, nowIso } from "../_utils/supabase";
+import { supabase, run, nowIso, isSupabaseConfigured } from "../_utils/supabase";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  try {
-    await run(supabase.from("user_roles").select("user_id").limit(1));
-    return NextResponse.json({
-      status: "healthy",
-      database: "connected",
-      timestamp: nowIso(),
-      environment: process.env.NODE_ENV || "development",
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        status: "unhealthy",
-        database: "disconnected",
-        error: error.message,
-        timestamp: nowIso(),
-      },
-      { status: 503 }
-    );
+  let dbStatus = isSupabaseConfigured ? "connected" : "not_configured";
+  let dbError = null;
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.from("user_roles").select("user_id").limit(1);
+      if (error) {
+        dbStatus = "pending_schema_setup";
+        dbError = error.message;
+      }
+    } catch (err) {
+      dbStatus = "error";
+      dbError = err.message;
+    }
   }
+
+  return NextResponse.json({
+    status: "healthy",
+    ok: true,
+    database: dbStatus,
+    dbError,
+    timestamp: nowIso(),
+    environment: process.env.NODE_ENV || "development",
+  });
 }

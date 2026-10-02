@@ -15,8 +15,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { fetchUserRole } from '@/lib/users';
 import { useSchoolContent, useStudentProgress } from '@/hooks/useApi';
-import SkillTrackCard from '../components/SkillTrackCard';
 import { askStudyBuddy } from '@/lib/api';
+import { buildUserContext } from '@/lib/chatbot/buildContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useRealtimeQuizProgress } from '@/hooks/useRealtimeQuizProgress';
@@ -281,11 +281,12 @@ export default function DashboardV2({ user = {} }) {
     setGyanBotLoading(true);
 
     try {
-      const response = await askStudyBuddy({ question: trimmed, mode: 'answer', history: nextHistory });
+      const userContext = buildUserContext(clerkUser, { school_id: schoolId, name }, { route: '/student' });
+      const response = await askStudyBuddy({ question: trimmed, mode: 'answer', history: nextHistory, userContext });
       const answer = response?.answer || 'I could not generate a response.';
       setGyanBotHistory((prev) => [...prev.slice(-9), { role: 'assistant', content: answer }]);
     } catch (error) {
-      setGyanBotError(error?.message || 'Unable to contact the AI assistant.');
+      setGyanBotError(error?.message || "Sorry, I'm having trouble connecting right now. Please try again.");
     } finally {
       setGyanBotLoading(false);
     }

@@ -210,15 +210,20 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
+  const url = new URL(request.url);
+
+  // Ignore non-http(s) requests (e.g. chrome-extension://, moz-extension://)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+
   // Ignore non-GET
   const isGet = request.method === 'GET';
-
-  const url = new URL(request.url);
   const acceptsHtml = request.headers.get('accept')?.includes('text/html');
 
   // Queue non-GET API requests when offline
   if (!isGet) {
-  const isApi = url.pathname.startsWith('/api/');
+    const isApi = url.pathname.startsWith('/api/');
     if (isApi) {
       event.respondWith((async () => {
         try {
@@ -252,8 +257,10 @@ self.addEventListener('fetch', (event) => {
           const res = await fetch(request);
           // Cache successful chunks for offline use
           if (res.ok) {
-            const cache = await caches.open(STATIC_CACHE);
-            cache.put(request, res.clone());
+            try {
+              const cache = await caches.open(STATIC_CACHE);
+              await cache.put(request, res.clone());
+            } catch (e) {}
           }
           return res;
         } catch (err) {
@@ -321,7 +328,7 @@ self.addEventListener('fetch', (event) => {
               idbPut(url.pathname + url.search, { data, ts: Date.now() });
             } catch {}
           }
-          caches.open(DATA_CACHE).then(c => c.put(request, clone));
+          caches.open(DATA_CACHE).then(c => c.put(request, clone).catch(() => {}));
           // Notify clients for data updates
           const clientsList = await self.clients.matchAll({ includeUncontrolled: true });
           clientsList.forEach(c => c.postMessage({ type: 'data-updated', key: url.pathname + url.search }));
@@ -353,8 +360,10 @@ self.addEventListener('fetch', (event) => {
         const res = await fetch(request, { cache: 'no-store' });
         // Cache successful HTML responses for offline access
         if (res.ok && res.headers.get('content-type')?.includes('text/html')) {
-          const cache = await caches.open(APP_SHELL_CACHE);
-          cache.put(request, res.clone());
+          try {
+            const cache = await caches.open(APP_SHELL_CACHE);
+            await cache.put(request, res.clone());
+          } catch (e) {}
         }
         return res;
       } catch (e) {
@@ -410,7 +419,9 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         try {
           const res = await fetch(request);
-          if (res.ok) cache.put(request, res.clone());
+          if (res.ok) {
+            try { await cache.put(request, res.clone()); } catch (e) {}
+          }
           return res;
         } catch (err) {
           // Return cached version or create fallback for common assets

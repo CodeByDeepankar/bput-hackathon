@@ -106,15 +106,22 @@ export default function Welcome() {
     let cancelled = false;
     (async () => {
       try {
-        const data = await fetchUserRole(user.id).catch(() => null);
+        const data = await fetchUserRole(user.id);
         const role = typeof data === "string" ? data : data?.role;
-        if (!role || cancelled) return;
+        if (cancelled) return;
         setRedirecting(true);
-        if (role === "student") router.replace("/student");
-        else if (role === "teacher") router.replace("/teacher");
-        else router.replace("/role-select");
+        if (role === "student") {
+          router.replace("/student");
+        } else if (role === "teacher") {
+          router.replace("/teacher");
+        } else {
+          router.replace("/role-select");
+        }
       } catch (_) {
-        // ignore role fetch errors on home
+        if (!cancelled) {
+          setRedirecting(true);
+          router.replace("/role-select");
+        }
       }
     })();
     return () => {

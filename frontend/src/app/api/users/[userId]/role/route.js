@@ -9,13 +9,19 @@ const AUTO_PROVISION_ROLES = process.env.AUTO_PROVISION_ROLES !== "false";
 export async function GET(request, context) {
   try {
     const { userId } = await context.params;
-    const roleDoc = await runSingle(
-      supabase
-        .from("user_roles")
-        .select("user_id, role, name, class, school_id, provisional, created_at, updated_at")
-        .eq("user_id", userId)
-        .maybeSingle()
-    );
+    let roleDoc = null;
+    
+    try {
+      roleDoc = await runSingle(
+        supabase
+          .from("user_roles")
+          .select("user_id, role, name, class, school_id, provisional, created_at, updated_at")
+          .eq("user_id", userId)
+          .maybeSingle()
+      );
+    } catch (dbErr) {
+      console.warn("user_roles query failed:", dbErr.message);
+    }
 
     if (!roleDoc) {
       if (!AUTO_PROVISION_ROLES) {
@@ -32,10 +38,14 @@ export async function GET(request, context) {
         created_at: now,
         updated_at: now,
       };
-      await run(supabase.from("user_roles").upsert(provisional));
-      broadcast("user.provisioned", { userId, role: "unassigned" });
+      try {
+        await run(supabase.from("user_roles").upsert(provisional));
+        broadcast("user.provisioned", { userId, role: "unassigned" });
+      } catch (upsertErr) {
+        console.warn("user_roles upsert failed:", upsertErr.message);
+      }
       return NextResponse.json(
-        { error: "Not Onboarded", provisional: true },
+        { error: "Not Onboarded", provisional: true, userId, role: "unassigned" },
         { status: 404 }
       );
     }

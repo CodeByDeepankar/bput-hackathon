@@ -4,12 +4,19 @@ const API_BASE_URL = (RAW_API_BASE_URL && RAW_API_BASE_URL.length
   : '/api');
 
 export async function fetchUserRole(userId) {
-  const res = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}/role`, {
-    cache: "no-store",
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Failed to fetch role (${res.status})`);
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}/role`, {
+      cache: "no-store",
+    });
+    if (res.status === 404) {
+      const json = await res.json().catch(() => null);
+      return json || { role: "unassigned", provisional: true };
+    }
+    if (!res.ok) return { role: "unassigned", provisional: true };
+    return await res.json();
+  } catch (err) {
+    return { role: "unassigned", provisional: true };
+  }
 }
 
 export async function saveUserRole({ userId, role, name, schoolId, class: klass }) {

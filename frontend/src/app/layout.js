@@ -28,7 +28,7 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0f172a" />
-  <link rel="icon" href="/icons/icon-192.png" />
+        <link rel="icon" href="/icons/icon-192.png" />
         {/* Hide Google Translate top banner/balloon early to avoid flicker */}
         <style>{`
           .goog-te-banner-frame { display: none !important; visibility: hidden !important; height: 0 !important; }
@@ -65,7 +65,7 @@ export default function RootLayout({ children }) {
         </Script>
       </head>
       <body className="flex flex-col min-h-screen">
-        <ClerkProvider {...(publishableKey ? { publishableKey } : {})}>
+        <ClerkProvider publishableKey={publishableKey}>
           <ThemeProvider>
             <ServiceWorkerRegister />
             <GoogleBannerSuppressor />
