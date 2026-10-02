@@ -137,9 +137,9 @@ export default function Welcome() {
         defer
       />
       <div></div>
-      <section className="relative w-[80vw] m-auto text-center h-150 bg-[#ffff] overflow-hidden flex items-center">
-        <div className="relative z-10 max-w-6xl mx-auto px-4 h-full flex items-center">
-          <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8 h-full">
+      <section className="relative w-full max-w-7xl mx-auto text-center md:text-left min-h-[calc(100vh-80px)] flex items-center px-4 py-8">
+        <div className="relative z-10 max-w-6xl mx-auto px-4 w-full flex items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8 w-full">
             {/* Left column: heading, paragraph, CTA */}
             <div className="flex w-full flex-col items-center text-center md:items-start md:text-left">
               <SignedOut>
@@ -150,7 +150,7 @@ export default function Welcome() {
                     hidden: {},
                     visible: { transition: { staggerChildren: 0.12 } },
                   }}
-                  className="p-2 md:p-0"
+                  className="p-2 md:p-0 flex flex-col items-center md:items-start"
                 >
                   <motion.h2
                     variants={headingVariants}
@@ -203,10 +203,10 @@ export default function Welcome() {
                     </span>
                   </motion.p>
 
-                  {/* CTA: centered and using Shades-like button style */}
-                  <div className="mt-6 flex justify-center md:justify-start">
+                  {/* CTA: visible on mobile and desktop */}
+                  <div className="mt-6 flex justify-center md:justify-start w-full">
                     <SignInButton>
-                      <button className="hidden md:inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-600 to-indigo-600 px-8 py-4 text-lg font-medium text-white hover:from-sky-700 hover:to-indigo-700 transform transition duration-200 ease-out hover:scale-105 hover:-translate-y-0.5 hover:shadow-xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-300 cursor-pointer">
+                      <button className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-sky-600 to-indigo-600 px-8 py-3.5 text-base md:text-lg font-medium text-white hover:from-sky-700 hover:to-indigo-700 transform transition duration-200 ease-out hover:scale-105 hover:-translate-y-0.5 hover:shadow-xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-300 cursor-pointer shadow-md">
                         Get Started
                       </button>
                     </SignInButton>
@@ -228,7 +228,7 @@ export default function Welcome() {
             </div>
 
             {/* Right column: mascot animation */}
-            <div className="flex items-center justify-center w-full h-screen">
+            <div className="flex items-center justify-center w-full min-h-[250px] md:min-h-[400px]">
               {!showGif ? (
                 <video
                   suppressHydrationWarning
@@ -239,7 +239,7 @@ export default function Welcome() {
                   muted
                   playsInline
                   onEnded={() => setShowGif(true)}
-                  className="max-w-[133%] max-h-[90%] object-contain"
+                  className="w-full max-w-md md:max-w-full max-h-[300px] md:max-h-[500px] object-contain"
                 />
               ) : (
                 <Image
@@ -247,7 +247,7 @@ export default function Welcome() {
                   alt="Home animation"
                   width={1280}
                   height={720}
-                  className="max-w-[133%] max-h-[90%] object-contain rounded-md"
+                  className="w-full max-w-md md:max-w-full max-h-[300px] md:max-h-[500px] object-contain rounded-md"
                   priority
                   unoptimized
                 />
