@@ -1,0 +1,193 @@
+/* TASK: Add styles for the video modal and lesson list views */
+/* GOAL: Ensure all three views (Skill Tracks, Topics, Lessons) are styled correctly */
+
+/* --- Page / container --- */
+.pageContainer {
+  padding: 1.5rem;
+  color: white; /* Ensure text is visible */
+}
+
+/* Styles for Skill Tracks Section (Image 1 View) */
+.skillTracksSection .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.skillTracksSection h2 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.skillTracksSection span {
+  font-size: 1rem;
+  color: #a0aec0;
+}
+
+.skillTracksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive grid */
+  gap: 1.5rem;
+}
+
+/* Styles for Sub-Topic View (Image 2 View) */
+.subTopicView {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.subTopicView h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+.subTopicView p {
+  font-size: 1rem;
+  color: #a0aec0;
+  margin-bottom: 2rem;
+}
+
+.subTopicGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.subTopicCard {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: white;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.subTopicCard:hover {
+  background: #4a5568;
+  border-color: #a78bfa;
+  transform: translateY(-3px);
+}
+
+/* --- New Styles for Lesson List View --- */
+
+.lessonView {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.lessonView h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+.lessonView p {
+  font-size: 1rem;
+  color: #a0aec0;
+  margin-bottom: 2rem;
+}
+
+.lessonList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lessonItem {
+  display: block;
+  width: 100%;
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: white;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.lessonItem:hover {
+  background: #4a5568;
+  border-color: #a78bfa;
+  transform: translateX(5px);
+}
+
+/* --- Modal Styles (keep as-is) --- */
+.videoModalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.videoModalContent {
+  background: #1a202c;
+  padding: 1rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.modalCloseButton {
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  background: white;
+  color: black;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1010;
+}
+
+.videoWrapper {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+}
+
+.videoWrapper iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+
+/* --- Responsive Media Query --- */
+@media (max-width: 768px) {
+  .skillTracksGrid,
+  .subTopicGrid,
+  .lessonList {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

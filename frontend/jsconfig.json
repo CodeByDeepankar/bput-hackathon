@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@student/*": ["./src/student/*"],
+      "@teacher/*": ["./src/teacher/*"]
+    },
+    "checkJs": false,
+    "skipLibCheck": true
+  },
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out",
+    "build"
+  ]
+}

@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSE Learning Quiz Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    @keyframes progressFill {
+      from { width: 0%; }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    .slide-in {
+      animation: slideIn 0.4s ease-out;
+    }
+    
+    .pulse-animation {
+      animation: pulse 0.3s ease-in-out;
+    }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .progress-bar-fill {
+      transition: width 0.3s ease-out;
+    }
+    
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
+    }
+    
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="min-h-full">
+  <div id="app" class="min-h-full"></div>
+  <script>
+    const defaultConfig = {
+      background_gradient_start: "#667eea",
+      background_gradient_end: "#764ba2",
+      card_background: "#ffffff",
+      primary_color: "#667eea",
+      text_color: "#1f2937",
+      success_color: "#10b981",
+      error_color: "#ef4444",
+      font_family: "Inter",
+      font_size: 16,
+      app_title: "CSE Learning Quiz",
+      app_subtitle: "Test your knowledge across multiple computer science subjects",
+      beginner_message: "Keep learning! You're just getting started.",
+      intermediate_message: "Good progress! You're on the right track.",
+      advanced_message: "Excellent work! You've mastered the basics."
+    };
+
+    const quizData = {
+      "Programming Fundamentals": {
+        icon: "💻",
+        questions: [
+          {
+            question: "What is a variable in programming?",
+            options: ["A fixed value", "A container for storing data", "A function", "A loop"],
+            correct: 1,
+            flashcard: {
+              title: "Variables",
+              content: "A variable is a named storage location in memory that holds a value. It can be changed during program execution. Think of it as a labeled box where you can store and retrieve data.",
+              example: "int age = 25; // 'age' is a variable storing 25"
+            }
+          },
+          {
+            question: "Which loop executes at least once?",
+            options: ["for loop", "while loop", "do-while loop", "foreach loop"],
+            correct: 2,
+            flashcard: {
+              title: "Do-While Loop",
+              content: "A do-while loop checks the condition after executing the code block, ensuring it runs at least once. Other loops check the condition first.",
+              example: "do { code } while (condition);"
+            }
+          },
+          {
+            question: "What does 'int' represent?",
+            options: ["Integer data type", "Internal function", "Interface", "Iteration"],
+            correct: 0,
+            flashcard: {
+              title: "Data Types",
+              content: "'int' is a data type that represents whole numbers (integers) without decimal points. Common range: -2,147,483,648 to 2,147,483,647.",
+              example: "int count = 10;"
+            }
+          },
+          {
+            question: "What is recursion?",
+            options: ["A loop", "A function calling itself", "An array", "A variable"],
+            correct: 1,
+            flashcard: {
+              title: "Recursion",
+              content: "Recursion is when a function calls itself to solve a problem by breaking it into smaller sub-problems. Must have a base case to stop.",
+              example: "factorial(n) = n * factorial(n-1)"
+            }
+          },
+          {
+            question: "What is an array?",
+            options: ["A single variable", "A collection of similar data types", "A function", "A class"],
+            correct: 1,
+            flashcard: {
+              title: "Arrays",
+              content: "An array is a data structure that stores multiple values of the same type in contiguous memory locations, accessible by index.",
+              example: "int numbers[5] = {1, 2, 3, 4, 5};"
+            }
+          },
+          {
+            question: "What is the purpose of 'if-else'?",
+            options: ["Loop execution", "Decision making", "Function definition", "Variable declaration"],
+            correct: 1,
+            flashcard: {
+              title: "Conditional Statements",
+              content: "If-else statements allow programs to make decisions and execute different code blocks based on conditions being true or false.",
+              example: "if (x > 0) { positive } else { negative }"
+            }
+          },
+          {
+            question: "What is a function?",
+            options: ["A variable", "A reusable block of code", "A data type", "A loop"],
+            correct: 1,
+            flashcard: {
+              title: "Functions",
+              content: "A function is a reusable block of code that performs a specific task. It can accept inputs (parameters) and return outputs.",
+              example: "int add(int a, int b) { return a + b; }"
+            }
+          },
+          {
+            question: "What does '==' operator do?",
+            options: ["Assignment", "Comparison", "Addition", "Subtraction"],
+            correct: 1,
+            flashcard: {
+              title: "Operators",
+              content: "The '==' operator compares two values for equality and returns true or false. Don't confuse with '=' which assigns values.",
+              example: "if (x == 5) // checks if x equals 5"
+            }
+          },
+          {
+            question: "What is a string?",
+            options: ["A number", "A sequence of characters", "A boolean", "An integer"],
+            correct: 1,
+            flashcard: {
+              title: "Strings",
+              content: "A string is a data type that represents text - a sequence of characters enclosed in quotes.",
+              example: "String name = \"John\";"
+            }
+          },
+          {
+            question: "What is the scope of a variable?",
+            options: ["Its data type", "Its visibility/accessibility", "Its value", "Its name"],
+            correct: 1,
+            flashcard: {
+              title: "Variable Scope",
+              content: "Scope defines where a variable can be accessed in code. Local scope is within a function, global scope is throughout the program.",
+              example: "Variables declared inside {} are local"
+            }
+          }
+        ],
+        resources: {
+          beginner: [
+            { title: "Programming Basics Tutorial", url: "https://www.youtube.com/watch?v=zOjov-2OZ0E" },
+            { title: "Variables and Data Types", url: "https://www.youtube.com/watch?v=vLnPwxZdW4Y" }
+          ],
+          intermediate: [
+            { title: "Control Structures Explained", url: "https://www.youtube.com/watch?v=eSYeHlwDCNA" },
+            { title: "Functions Deep Dive", url: "https://www.youtube.com/watch?v=N_Ls37qeQ4c" }
+          ],
+          advanced: [
+            { title: "Advanced Programming Concepts", url: "https://www.geeksforgeeks.org/advanced-c-programming/" },
+            { title: "Design Patterns", url: "https://refactoring.guru/design-patterns" }
+          ]
+        }
+      },
+      "Data Structures": {
+        icon: "🗂️",
+        questions: [
+          {
+            question: "What is a Stack?",
+            options: ["FIFO structure", "LIFO structure", "Random access", "Tree structure"],
+            correct: 1,
+            flashcard: {
+              title: "Stack",
+              content: "A Stack is a Last-In-First-Out (LIFO) data structure. Like a stack of plates - you add and remove from the top only.",
+              example: "Operations: push(), pop(), peek()"
+            }
+          },
+          {
+            question: "What is a Queue?",
+            options: ["LIFO structure", "FIFO structure", "Tree structure", "Graph structure"],
+            correct: 1,
+            flashcard: {
+              title: "Queue",
+              content: "A Queue is a First-In-First-Out (FIFO) data structure. Like a line at a store - first person in is first served.",
+              example: "Operations: enqueue(), dequeue(), front()"
+            }
+          },
+          {
+            question: "What is a Linked List?",
+            options: ["Array with fixed size", "Nodes connected by pointers", "Stack implementation", "Hash table"],
+            correct: 1,
+            flashcard: {
+              title: "Linked List",
+              content: "A Linked List is a linear data structure where elements (nodes) are connected via pointers. Each node contains data and a reference to the next node.",
+              example: "Node: [Data | Next Pointer]"
+            }
+          },
+          {
+            question: "What is a Binary Tree?",
+            options: ["Linear structure", "Hierarchical structure with max 2 children", "Graph with cycles", "Array"],
+            correct: 1,
+            flashcard: {
+              title: "Binary Tree",
+              content: "A Binary Tree is a hierarchical structure where each node has at most two children (left and right). Root is the topmost node.",
+              example: "Used in: BST, Heap, Expression trees"
+            }
+          },
+          {
+            question: "What is a Hash Table?",
+            options: ["Sorted array", "Key-value pair storage", "Tree structure", "Stack"],
+            correct: 1,
+            flashcard: {
+              title: "Hash Table",
+              content: "A Hash Table stores data as key-value pairs using a hash function to compute an index. Provides O(1) average lookup time.",
+              example: "hashTable['name'] = 'John'"
+            }
+          },
+          {
+            question: "What is the time complexity of binary search?",
+            options: ["O(n)", "O(log n)", "O(n²)", "O(1)"],
+            correct: 1,
+            flashcard: {
+              title: "Binary Search",
+              content: "Binary search has O(log n) time complexity. It repeatedly divides the search space in half, working only on sorted arrays.",
+              example: "Each step eliminates half the elements"
+            }
+          },
+          {
+            question: "What is a Graph?",
+            options: ["Linear structure", "Collection of nodes and edges", "Array", "Stack"],
+            correct: 1,
+            flashcard: {
+              title: "Graph",
+              content: "A Graph is a non-linear data structure with nodes (vertices) connected by edges. Can be directed or undirected.",
+              example: "Used in: Social networks, Maps, Web pages"
+            }
+          },
+          {
+            question: "What is a Heap?",
+            options: ["Sorted array", "Complete binary tree with heap property", "Linked list", "Hash table"],
+            correct: 1,
+            flashcard: {
+              title: "Heap",
+              content: "A Heap is a complete binary tree where parent nodes are either greater (max heap) or smaller (min heap) than children.",
+              example: "Used in: Priority queues, Heap sort"
+            }
+          },
+          {
+            question: "What is the purpose of a Trie?",
+            options: ["Sorting numbers", "Efficient string searching", "Graph traversal", "Stack operations"],
+            correct: 1,
+            flashcard: {
+              title: "Trie",
+              content: "A Trie (prefix tree) is used for efficient string searching and prefix matching. Each node represents a character.",
+              example: "Used in: Autocomplete, Spell checkers"
+            }
+          },
+          {
+            question: "What is Big O notation?",
+            options: ["A data structure", "Algorithm efficiency measure", "A sorting algorithm", "A programming language"],
+            correct: 1,
+            flashcard: {
+              title: "Big O Notation",
+              content: "Big O notation describes the upper bound of algorithm time/space complexity as input size grows. Helps compare algorithm efficiency.",
+              example: "O(1) < O(log n) < O(n) < O(n²)"
+            }
+          }
+        ],
+        resources: {
+          beginner: [
+            { title: "Data Structures Basics", url: "https://www.youtube.com/watch?v=RBSGKlAvoiM" },
+            { title: "Arrays and Linked Lists", url: "https://www.youtube.com/watch?v=njTh_OwMljA" }
+          ],
+          intermediate: [
+            { title: "Trees and Graphs", url: "https://www.youtube.com/watch?v=1-l_UOFi1Xw" },
+            { title: "Hash Tables Explained", url: "https://www.youtube.com/watch?v=shs0KM3wKv8" }
+          ],
+          advanced: [
+            { title: "Advanced Data Structures", url: "https://www.geeksforgeeks.org/advanced-data-structures/" },
+            { title: "Algorithm Analysis", url: "https://www.coursera.org/learn/algorithms-part1" }
+          ]
+        }
+      },
+      "Operating Systems": {
+        icon: "⚙️",
+        questions: [
+          {
+            question: "What is an Operating System?",
+            options: ["Application software", "System software managing hardware", "Programming language", "Database"],
+            correct: 1,
+            flashcard: {
+              title: "Operating System",
+              content: "An OS is system software that manages computer hardware and software resources, providing services for programs.",
+              example: "Examples: Windows, Linux, macOS"
+            }
+          },
+          {
+            question: "What is a Process?",
+            options: ["A file", "A program in execution", "A folder", "A device"],
+            correct: 1,
+            flashcard: {
+              title: "Process",
+              content: "A process is a program in execution with its own memory space, including code, data, and system resources.",
+              example: "States: New, Ready, Running, Waiting, Terminated"
+            }
+          },
+          {
+            question: "What is a Thread?",
+            options: ["A process", "Lightweight unit of execution", "A file", "A device"],
+            correct: 1,
+            flashcard: {
+              title: "Thread",
+              content: "A thread is the smallest unit of execution within a process. Multiple threads share the same process resources.",
+              example: "Enables concurrent execution within a process"
+            }
+          },
+          {
+            question: "What is Deadlock?",
+            options: ["Fast execution", "Processes waiting indefinitely", "Memory allocation", "File system"],
+            correct: 1,
+            flashcard: {
+              title: "Deadlock",
+              content: "Deadlock occurs when processes are blocked forever, each waiting for resources held by others. Requires 4 conditions.",
+              example: "Conditions: Mutual exclusion, Hold & wait, No preemption, Circular wait"
+            }
+          },
+          {
+            question: "What is Virtual Memory?",
+            options: ["RAM only", "Disk space used as RAM", "Cache memory", "ROM"],
+            correct: 1,
+            flashcard: {
+              title: "Virtual Memory",
+              content: "Virtual memory uses disk space to extend RAM, allowing programs larger than physical memory to run.",
+              example: "Uses paging and swapping techniques"
+            }
+          },
+          {
+            question: "What is a Semaphore?",
+            options: ["A file", "Synchronization tool", "Memory type", "CPU register"],
+            correct: 1,
+            flashcard: {
+              title: "Semaphore",
+              content: "A semaphore is a synchronization primitive that controls access to shared resources using wait() and signal() operations.",
+              example: "Binary semaphore (mutex) or counting semaphore"
+            }
+          },
+          {
+            question: "What is Paging?",
+            options: ["File reading", "Memory management technique", "Process scheduling", "Disk formatting"],
+            correct: 1,
+            flashcard: {
+              title: "Paging",
+              content: "Paging divides memory into fixed-size blocks (pages) to eliminate external fragmentation and enable virtual memory.",
+              example: "Page table maps virtual to physical addresses"
+            }
+          },
+          {
+            question: "What is CPU Scheduling?",
+            options: ["Memory allocation", "Selecting which process runs next", "File management", "Network routing"],
+            correct: 1,
+            flashcard: {
+              title: "CPU Scheduling",
+              content: "CPU scheduling determines which process gets CPU time and for how long, maximizing CPU utilization and throughput.",
+              example: "Algorithms: FCFS, SJF, Round Robin, Priority"
+            }
+          },
+          {
+            question: "What is a File System?",
+            options: ["RAM management", "Method to store and organize files", "CPU cache", "Network protocol"],
+            correct: 1,
+            flashcard: {
+              title: "File System",
+              content: "A file system organizes and stores files on storage devices, managing directories, permissions, and metadata.",
+              example: "Types: NTFS, ext4, FAT32, HFS+"
+            }
+          },
+          {
+            question: "What is Thrashing?",
+            options: ["Fast processing", "Excessive paging activity", "CPU overheating", "Network congestion"],
+            correct: 1,
+            flashcard: {
+              title: "Thrashing",
+              content: "Thrashing occurs when a system spends more time paging than executing, due to insufficient physical memory.",
+              example: "Solution: Increase RAM or reduce multiprogramming"
+            }
+          }
+        ],
+        resources: {
+          beginner: [
+            { title: "OS Basics Tutorial", url: "https://www.youtube.com/watch?v=vBURTt97EkA" },
+            { title: "Process Management", url: "https://www.youtube.com/watch?v=OrM7nZcxXZU" }
+          ],
+          intermediate: [
+            { title: "Memory Management", url: "https://www.youtube.com/watch?v=qdkxXygc3rE" },
+            { title: "CPU Scheduling", url: "https://www.youtube.com/watch?v=EWkQl0n0w5M" }
+          ],
+          advanced: [
+            { title: "Advanced OS Concepts", url: "https://www.geeksforgeeks.org/operating-systems/" },
+            { title: "OS Design Patterns", url: "https://pages.cs.wisc.edu/~remzi/OSTEP/" }
+          ]
+        }
+      },
+      "Computer Networks": {
+        icon: "🌐",
+        questions: [
+          {
+            question: "What is the OSI Model?",
+            options: ["Programming model", "7-layer network model", "Database model", "OS model"],
+            correct: 1,
+            flashcard: {
+              title: "OSI Model",
+              content: "The OSI (Open Systems Interconnection) model is a 7-layer framework describing network communication functions.",
+              example: "Layers: Physical, Data Link, Network, Transport, Session, Presentation, Application"
+            }
+          },
+          {
+            question: "What is an IP Address?",
+            options: ["Email address", "Unique network identifier", "Website name", "File path"],
+            correct: 1,
+            flashcard: {
+              title: "IP Address",
+              content: "An IP address is a unique numerical identifier assigned to each device on a network for communication.",
+              example: "IPv4: 192.168.1.1, IPv6: 2001:0db8::1"
+            }
+          },
+          {
+            question: "What is TCP?",
+            options: ["Network cable", "Reliable connection-oriented protocol", "IP address type", "Router"],
+            correct: 1,
+            flashcard: {
+              title: "TCP Protocol",
+              content: "TCP (Transmission Control Protocol) ensures reliable, ordered delivery of data with error checking and flow control.",
+              example: "Used for: Web browsing, email, file transfer"
+            }
+          },
+          {
+            question: "What is UDP?",
+            options: ["Reliable protocol", "Fast connectionless protocol", "Network device", "IP version"],
+            correct: 1,
+            flashcard: {
+              title: "UDP Protocol",
+              content: "UDP (User Datagram Protocol) is a fast, connectionless protocol without guaranteed delivery or ordering.",
+              example: "Used for: Video streaming, gaming, DNS"
+            }
+          },
+          {
+            question: "What is DNS?",
+            options: ["Network cable", "Domain Name System", "Data encryption", "Router type"],
+            correct: 1,
+            flashcard: {
+              title: "DNS",
+              content: "DNS translates human-readable domain names (google.com) into IP addresses that computers use.",
+              example: "Like a phonebook for the internet"
+            }
+          },
+          {
+            question: "What is a Router?",
+            options: ["Storage device", "Device forwarding packets between networks", "Monitor", "Keyboard"],
+            correct: 1,
+            flashcard: {
+              title: "Router",
+              content: "A router forwards data packets between computer networks, determining the best path for data transmission.",
+              example: "Connects your home network to the internet"
+            }
+          },
+          {
+            question: "What is HTTP?",
+            options: ["Programming language", "Web communication protocol", "Database", "Operating system"],
+            correct: 1,
+            flashcard: {
+              title: "HTTP",
+              content: "HTTP (HyperText Transfer Protocol) is the foundation of web communication, defining how messages are formatted and transmitted.",
+              example: "HTTPS is the secure version using encryption"
+            }
+          },
+          {
+            question: "What is a Subnet Mask?",
+            options: ["Password", "Divides IP into network and host parts", "Router name", "Cable type"],
+            correct: 1,
+            flashcard: {
+              title: "Subnet Mask",
+              content: "A subnet mask divides an IP address into network and host portions, defining the network's size.",
+              example: "255.255.255.0 means first 3 octets are network"
+            }
+          },
+          {
+            question: "What is a Firewall?",
+            options: ["Physical wall", "Network security system", "Router", "Cable"],
+            correct: 1,
+            flashcard: {
+              title: "Firewall",
+              content: "A firewall monitors and controls incoming/outgoing network traffic based on security rules, protecting against threats.",
+              example: "Can be hardware or software-based"
+            }
+          },
+          {
+            question: "What is Bandwidth?",
+            options: ["Cable width", "Maximum data transfer rate", "Router speed", "IP address range"],
+            correct: 1,
+            flashcard: {
+              title: "Bandwidth",
+              content: "Bandwidth is the maximum rate of data transfer across a network path, typically measured in bits per second (bps).",
+              example: "Higher bandwidth = faster data transfer"
+            }
+          }
+        ],
+        resources: {
+          beginner: [
+            { title: "Networking Basics", url: "https://www.youtube.com/watch?v=cNwEVYkx2Kk" },
+            { title: "IP Addressing", url: "https://www.youtube.com/watch?v=ddM9AcreVqY" }
+          ],
+          intermediate: [
+            { title: "TCP/IP Protocol Suite", url: "https://www.youtube.com/watch?v=PpsEaqJV_A0" },
+            { title: "Network Security", url: "https://www.youtube.com/watch?v=qiQR5rTSshw" }
+          ],
+          advanced: [
+            { title: "Advanced Networking", url: "https://www.geeksforgeeks.org/computer-network-tutorials/" },
+            { title: "Network Design", url: "https://www.cisco.com/c/en/us/solutions/enterprise-networks/index.html" }
+          ]
+        }
+      },
+      "DBMS": {
+        icon: "🗄️",
+        questions: [
+          {
+            question: "What is a Database?",
+            options: ["A file", "Organized collection of data", "A program", "A network"],
+            correct: 1,
+            flashcard: {
+              title: "Database",
+              content: "A database is an organized collection of structured data stored electronically, managed by a DBMS.",
+              example: "Examples: MySQL, PostgreSQL, MongoDB"
+            }
+          },
+          {
+            question: "What is a Primary Key?",
+            options: ["Any column", "Unique identifier for records", "Foreign key", "Index"],
+            correct: 1,
+            flashcard: {
+              title: "Primary Key",
+              content: "A primary key uniquely identifies each record in a table. It must be unique and cannot be NULL.",
+              example: "Student_ID in a Students table"
+            }
+          },
+          {
+            question: "What is SQL?",
+            options: ["Programming language", "Database query language", "Operating system", "Network protocol"],
+            correct: 1,
+            flashcard: {
+              title: "SQL",
+              content: "SQL (Structured Query Language) is used to communicate with databases - create, read, update, and delete data.",
+              example: "SELECT * FROM users WHERE age > 18"
+            }
+          },
+          {
+            question: "What is Normalization?",
+            options: ["Data backup", "Organizing data to reduce redundancy", "Data encryption", "Data deletion"],
+            correct: 1,
+            flashcard: {
+              title: "Normalization",
+              content: "Normalization organizes database tables to minimize redundancy and dependency, improving data integrity.",
+              example: "Forms: 1NF, 2NF, 3NF, BCNF"
+            }
+          },
+          {
+            question: "What is a Foreign Key?",
+            options: ["Primary key", "Links two tables together", "Unique key", "Index"],
+            correct: 1,
+            flashcard: {
+              title: "Foreign Key",
+              content: "A foreign key is a field that references the primary key of another table, establishing relationships between tables.",
+              example: "Customer_ID in Orders table references Customers table"
+            }
+          },
+          {
+            question: "What is a JOIN?",
+            options: ["Delete operation", "Combines rows from multiple tables", "Insert operation", "Update operation"],
+            correct: 1,
+            flashcard: {
+              title: "JOIN",
+              content: "JOIN combines rows from two or more tables based on related columns, enabling complex queries across tables.",
+              example: "Types: INNER, LEFT, RIGHT, FULL OUTER JOIN"
+            }
+          },
+          {
+            question: "What is ACID?",
+            options: ["Database name", "Transaction properties", "SQL command", "Table type"],
+            correct: 1,
+            flashcard: {
+              title: "ACID Properties",
+              content: "ACID ensures reliable database transactions: Atomicity (all or nothing), Consistency (valid state), Isolation (concurrent), Durability (permanent).",
+              example: "Guarantees data integrity during transactions"
+            }
+          },
+          {
+            question: "What is an Index?",
+            options: ["Table name", "Data structure for fast retrieval", "Primary key", "Foreign key"],
+            correct: 1,
+            flashcard: {
+              title: "Index",
+              content: "An index is a data structure that improves query speed by creating pointers to data, like a book's index.",
+              example: "Trade-off: Faster reads, slower writes"
+            }
+          },
+          {
+            question: "What is a Transaction?",
+            options: ["Table", "Sequence of operations as single unit", "Query", "Database"],
+            correct: 1,
+            flashcard: {
+              title: "Transaction",
+              content: "A transaction is a sequence of database operations treated as a single unit, following ACID properties.",
+              example: "Bank transfer: debit and credit must both succeed"
+            }
+          },
+          {
+            question: "What is NoSQL?",
+            options: ["No databases", "Non-relational database", "SQL version", "Table type"],
+            correct: 1,
+            flashcard: {
+              title: "NoSQL",
+              content: "NoSQL databases store data in non-tabular formats (documents, key-value, graphs), offering flexibility and scalability.",
+              example: "Examples: MongoDB, Redis, Cassandra"
+            }
+          }
+        ],
+        resources: {
+          beginner: [
+            { title: "Database Basics", url: "https://www.youtube.com/watch?v=wR0jg0eQsZA" },
+            { title: "SQL Tutorial", url: "https://www.youtube.com/watch?v=HXV3zeQKqGY" }
+          ],
+          intermediate: [
+            { title: "Database Design", url: "https://www.youtube.com/watch?v=ztHopE5Wnpc" },
+            { title: "Normalization Explained", url: "https://www.youtube.com/watch?v=GFQaEYEc8_8" }
+          ],
+          advanced: [
+            { title: "Advanced DBMS", url: "https://www.geeksforgeeks.org/dbms/" },
+            { title: "Database Optimization", url: "https://use-the-index-luke.com/" }
+          ]
+        }
+      }
+    };
+
+    let currentSubject = null;
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let incorrectQuestions = [];
+    let userPerformance = JSON.parse(localStorage.getItem('quizPerformance')) || {};
+
+    async function onConfigChange(config) {
+      const app = document.getElementById('app');
+      const bgGradient = `linear-gradient(135deg, ${config.background_gradient_start || defaultConfig.background_gradient_start}, ${config.background_gradient_end || defaultConfig.background_gradient_end})`;
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      const baseSize = config.font_size || defaultConfig.font_size;
+      
+      document.body.style.background = bgGradient;
+      document.body.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.body.style.fontSize = `${baseSize}px`;
+      document.body.style.color = config.text_color || defaultConfig.text_color;
+      
+      if (!currentSubject) {
+        renderSubjectSelection();
+      }
+    }
+
+    function renderSubjectSelection() {
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const baseSize = config.font_size || defaultConfig.font_size;
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-full flex items-center justify-center p-4 fade-in">
+          <div class="glass-card rounded-3xl p-8 max-w-4xl w-full shadow-2xl">
+            <div class="text-center mb-8">
+              <h1 class="mb-2" style="font-size: ${baseSize * 2.5}px; font-weight: 800; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color};">
+                ${config.app_title || defaultConfig.app_title}
+              </h1>
+              <p class="opacity-80" style="font-size: ${baseSize * 1.1}px; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color};">
+                ${config.app_subtitle || defaultConfig.app_subtitle}
+              </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${Object.keys(quizData).map(subject => `
+                <button onclick="startQuiz('${subject}')" 
+                  class="p-6 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                  style="background: ${config.card_background || defaultConfig.card_background}; border: 2px solid ${config.primary_color || defaultConfig.primary_color};">
+                  <div style="font-size: ${baseSize * 3}px;" class="mb-3">${quizData[subject].icon}</div>
+                  <h3 style="font-size: ${baseSize * 1.2}px; font-weight: 700; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color};">
+                    ${subject}
+                  </h3>
+                  <p style="font-size: ${baseSize * 0.85}px; color: ${config.text_color || defaultConfig.text_color}; opacity: 0.7;">
+                    10 Questions
+                  </p>
+                  ${userPerformance[subject] ? `
+                    <div class="mt-3 pt-3" style="border-top: 1px solid ${config.primary_color || defaultConfig.primary_color}; opacity: 0.5;">
+                      <p style="font-size: ${baseSize * 0.75}px; color: ${config.text_color || defaultConfig.text_color};">
+                        Best: ${userPerformance[subject].bestScore}/10
+                      </p>
+                    </div>
+                  ` : ''}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function startQuiz(subject) {
+      currentSubject = subject;
+      currentQuestionIndex = 0;
+      score = 0;
+      incorrectQuestions = [];
+      
+      showLoadingScreen();
+      setTimeout(() => {
+        renderQuestion();
+      }, 1500);
+    }
+
+    function showLoadingScreen() {
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const baseSize = config.font_size || defaultConfig.font_size;
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-full flex items-center justify-center fade-in">
+          <div class="text-center">
+            <div class="spinner mx-auto mb-6"></div>
+            <p style="font-size: ${baseSize * 1.3}px; font-weight: 600; font-family: ${customFont}, ${baseFontStack}; color: ${config.card_background || defaultConfig.card_background};">
+              Loading ${currentSubject} Quiz...
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderQuestion() {
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const baseSize = config.font_size || defaultConfig.font_size;
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      
+      const question = quizData[currentSubject].questions[currentQuestionIndex];
+      const progress = ((currentQuestionIndex + 1) / quizData[currentSubject].questions.length) * 100;
+      
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-full flex items-center justify-center p-4">
+          <div class="glass-card rounded-3xl p-8 max-w-3xl w-full shadow-2xl fade-in">
+            <div class="mb-6">
+              <div class="flex justify-between items-center mb-3">
+                <span style="font-size: ${baseSize * 0.9}px; font-weight: 600; color: ${config.text_color || defaultConfig.text_color};">
+                  Question ${currentQuestionIndex + 1} of ${quizData[currentSubject].questions.length}
+                </span>
+                <span style="font-size: ${baseSize * 0.9}px; font-weight: 600; color: ${config.text_color || defaultConfig.text_color};">
+                  Score: ${score}
+                </span>
+              </div>
+              <div class="w-full rounded-full h-3" style="background: rgba(255,255,255,0.3);">
+                <div class="progress-bar-fill h-3 rounded-full" style="width: ${progress}%; background: ${config.primary_color || defaultConfig.primary_color};"></div>
+              </div>
+            </div>
+            
+            <div class="mb-8">
+              <h2 style="font-size: ${baseSize * 1.5}px; font-weight: 700; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; line-height: 1.4;">
+                ${question.question}
+              </h2>
+            </div>
+            
+            <div class="space-y-3">
+              ${question.options.map((option, index) => `
+                <button onclick="selectAnswer(${index})" 
+                  class="w-full p-4 rounded-xl text-left transition-all duration-300 hover:scale-102 hover:shadow-lg slide-in"
+                  style="background: ${config.card_background || defaultConfig.card_background}; border: 2px solid transparent; font-size: ${baseSize}px; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; animation-delay: ${index * 0.1}s;">
+                  <span style="font-weight: 600; color: ${config.primary_color || defaultConfig.primary_color}; margin-right: 12px;">
+                    ${String.fromCharCode(65 + index)}.
+                  </span>
+                  ${option}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectAnswer(selectedIndex) {
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const question = quizData[currentSubject].questions[currentQuestionIndex];
+      const isCorrect = selectedIndex === question.correct;
+      
+      if (isCorrect) {
+        score++;
+        showFeedback(true);
+        setTimeout(() => {
+          nextQuestion();
+        }, 1500);
+      } else {
+        incorrectQuestions.push({
+          question: question.question,
+          flashcard: question.flashcard
+        });
+        showFlashcard(question.flashcard);
+      }
+    }
+
+    function showFeedback(isCorrect) {
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const baseSize = config.font_size || defaultConfig.font_size;
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      
+      const app = document.getElementById('app');
+      const color = isCorrect ? (config.success_color || defaultConfig.success_color) : (config.error_color || defaultConfig.error_color);
+      const message = isCorrect ? '✓ Correct!' : '✗ Incorrect';
+      
+      app.innerHTML = `
+        <div class="min-h-full flex items-center justify-center pulse-animation">
+          <div class="text-center">
+            <div style="font-size: ${baseSize * 5}px; color: ${color}; margin-bottom: 16px;">
+              ${isCorrect ? '✓' : '✗'}
+            </div>
+            <p style="font-size: ${baseSize * 2}px; font-weight: 700; font-family: ${customFont}, ${baseFontStack}; color: ${config.card_background || defaultConfig.card_background};">
+              ${message}
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    function showFlashcard(flashcard) {
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const baseSize = config.font_size || defaultConfig.font_size;
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="modal-backdrop fixed inset-0 flex items-center justify-center p-4 z-50 fade-in">
+          <div class="glass-card rounded-3xl p-8 max-w-2xl w-full shadow-2xl" style="background: ${config.card_background || defaultConfig.card_background};">
+            <div class="mb-6">
+              <div style="font-size: ${baseSize * 3}px; margin-bottom: 16px;">💡</div>
+              <h3 style="font-size: ${baseSize * 1.8}px; font-weight: 700; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; margin-bottom: 16px;">
+                ${flashcard.title}
+              </h3>
+              <p style="font-size: ${baseSize * 1.1}px; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; line-height: 1.6; margin-bottom: 16px;">
+                ${flashcard.content}
+              </p>
+              <div class="p-4 rounded-xl" style="background: rgba(0,0,0,0.05);">
+                <p style="font-size: ${baseSize * 0.9}px; font-family: monospace; color: ${config.text_color || defaultConfig.text_color};">
+                  ${flashcard.example}
+                </p>
+              </div>
+            </div>
+            <button onclick="nextQuestion()" 
+              class="w-full py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105"
+              style="background: ${config.primary_color || defaultConfig.primary_color}; color: white; font-size: ${baseSize * 1.1}px; font-family: ${customFont}, ${baseFontStack};">
+              Next Question →
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function nextQuestion() {
+      currentQuestionIndex++;
+      if (currentQuestionIndex < quizData[currentSubject].questions.length) {
+        renderQuestion();
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const baseSize = config.font_size || defaultConfig.font_size;
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      
+      let category, categoryColor, message, resources;
+      
+      if (score <= 4) {
+        category = 'Beginner';
+        categoryColor = config.error_color || defaultConfig.error_color;
+        message = config.beginner_message || defaultConfig.beginner_message;
+        resources = quizData[currentSubject].resources.beginner;
+      } else if (score <= 7) {
+        category = 'Intermediate';
+        categoryColor = '#f59e0b';
+        message = config.intermediate_message || defaultConfig.intermediate_message;
+        resources = quizData[currentSubject].resources.intermediate;
+      } else {
+        category = 'Advanced';
+        categoryColor = config.success_color || defaultConfig.success_color;
+        message = config.advanced_message || defaultConfig.advanced_message;
+        resources = quizData[currentSubject].resources.advanced;
+      }
+      
+      if (!userPerformance[currentSubject] || score > userPerformance[currentSubject].bestScore) {
+        userPerformance[currentSubject] = {
+          bestScore: score,
+          attempts: (userPerformance[currentSubject]?.attempts || 0) + 1
+        };
+        localStorage.setItem('quizPerformance', JSON.stringify(userPerformance));
+      }
+      
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-full flex items-center justify-center p-4">
+          <div class="glass-card rounded-3xl p-8 max-w-3xl w-full shadow-2xl fade-in">
+            <div class="text-center mb-8">
+              <div style="font-size: ${baseSize * 4}px; margin-bottom: 16px;">🎉</div>
+              <h2 style="font-size: ${baseSize * 2}px; font-weight: 800; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; margin-bottom: 8px;">
+                Quiz Complete!
+              </h2>
+              <div class="inline-block px-6 py-2 rounded-full mb-4" style="background: ${categoryColor};">
+                <span style="font-size: ${baseSize * 1.2}px; font-weight: 700; color: white; font-family: ${customFont}, ${baseFontStack};">
+                  ${category}
+                </span>
+              </div>
+              <p style="font-size: ${baseSize * 2.5}px; font-weight: 700; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; margin-bottom: 8px;">
+                ${score} / 10
+              </p>
+              <p style="font-size: ${baseSize * 1.1}px; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; opacity: 0.8;">
+                ${message}
+              </p>
+            </div>
+            
+            ${incorrectQuestions.length > 0 ? `
+              <div class="mb-6 p-6 rounded-2xl" style="background: rgba(0,0,0,0.05);">
+                <h3 style="font-size: ${baseSize * 1.3}px; font-weight: 700; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; margin-bottom: 16px;">
+                  📚 Review Topics
+                </h3>
+                <div class="space-y-3">
+                  ${incorrectQuestions.map(item => `
+                    <div class="p-4 rounded-xl" style="background: ${config.card_background || defaultConfig.card_background};">
+                      <p style="font-size: ${baseSize * 0.95}px; font-weight: 600; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; margin-bottom: 8px;">
+                        ${item.flashcard.title}
+                      </p>
+                      <p style="font-size: ${baseSize * 0.85}px; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; opacity: 0.7;">
+                        ${item.flashcard.content}
+                      </p>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+            
+            <div class="mb-6 p-6 rounded-2xl" style="background: rgba(0,0,0,0.05);">
+              <h3 style="font-size: ${baseSize * 1.3}px; font-weight: 700; font-family: ${customFont}, ${baseFontStack}; color: ${config.text_color || defaultConfig.text_color}; margin-bottom: 16px;">
+                🎯 Recommended Resources
+              </h3>
+              <div class="space-y-3">
+                ${resources.map(resource => `
+                  <a href="${resource.url}" target="_blank" rel="noopener noreferrer"
+                    class="block p-4 rounded-xl transition-all duration-300 hover:scale-102"
+                    style="background: ${config.card_background || defaultConfig.card_background}; text-decoration: none;">
+                    <p style="font-size: ${baseSize}px; font-weight: 600; font-family: ${customFont}, ${baseFontStack}; color: ${config.primary_color || defaultConfig.primary_color};">
+                      ${resource.title} →
+                    </p>
+                  </a>
+                `).join('')}
+              </div>
+            </div>
+            
+            <div class="flex gap-3">
+              <button onclick="startQuiz('${currentSubject}')" 
+                class="flex-1 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105"
+                style="background: ${config.primary_color || defaultConfig.primary_color}; color: white; font-size: ${baseSize * 1.1}px; font-family: ${customFont}, ${baseFontStack};">
+                Try Again
+              </button>
+              <button onclick="backToSubjects()" 
+                class="flex-1 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105"
+                style="background: ${config.card_background || defaultConfig.card_background}; border: 2px solid ${config.primary_color || defaultConfig.primary_color}; color: ${config.text_color || defaultConfig.text_color}; font-size: ${baseSize * 1.1}px; font-family: ${customFont}, ${baseFontStack};">
+                Choose Subject
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function backToSubjects() {
+      currentSubject = null;
+      renderSubjectSelection();
+    }
+
+    window.startQuiz = startQuiz;
+    window.selectAnswer = selectAnswer;
+    window.nextQuestion = nextQuestion;
+    window.backToSubjects = backToSubjects;
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.background_gradient_start || defaultConfig.background_gradient_start,
+              set: (value) => {
+                config.background_gradient_start = value;
+                window.elementSdk.setConfig({ background_gradient_start: value });
+              }
+            },
+            {
+              get: () => config.background_gradient_end || defaultConfig.background_gradient_end,
+              set: (value) => {
+                config.background_gradient_end = value;
+                window.elementSdk.setConfig({ background_gradient_end: value });
+              }
+            },
+            {
+              get: () => config.card_background || defaultConfig.card_background,
+              set: (value) => {
+                config.card_background = value;
+                window.elementSdk.setConfig({ card_background: value });
+              }
+            },
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                config.primary_color = value;
+                window.elementSdk.setConfig({ primary_color: value });
+              }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (value) => {
+                config.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              config.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["app_title", config.app_title || defaultConfig.app_title],
+          ["app_subtitle", config.app_subtitle || defaultConfig.app_subtitle],
+          ["beginner_message", config.beginner_message || defaultConfig.beginner_message],
+          ["intermediate_message", config.intermediate_message || defaultConfig.intermediate_message],
+          ["advanced_message", config.advanced_message || defaultConfig.advanced_message]
+        ])
+      });
+    } else {
+      onConfigChange(defaultConfig);
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9981088cd50e1c49',t:'MTc2MjA1OTI2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

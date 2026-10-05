@@ -1,0 +1,48 @@
+/* Navbar specific styles to support the hamburger mobile menu fallback
+   Project primarily uses Tailwind but these rules provide explicit
+   show/hide behavior for the nav-links and hamburger button as requested.
+*/
+
+.hamburger-btn {
+  display: none; /* hidden by default (desktop) */
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.nav-links {
+  display: flex; /* desktop default - overridden on mobile via media query */
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* Mobile behavior */
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: block; /* show hamburger on small screens */
+  }
+
+  .nav-links {
+    display: none; /* hide links by default on mobile */
+    flex-direction: column;
+    position: absolute;
+    top: 56px; /* below navbar */
+    left: 0;
+    right: 0;
+    background-color: var(--color-card, #ffffff);
+    padding: 1rem;
+    box-shadow: 0 8px 24px rgba(2,6,23,0.2);
+    z-index: 50;
+  }
+
+  .nav-links.show {
+    display: flex; /* show the mobile menu when toggled */
+  }
+
+  /* Make search full width inside mobile menu */
+  .nav-links input[type="search"] {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}

@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Recap of Topics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    .animated-gradient {
+      background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+    }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    
+    .subject-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .subject-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .slide-in {
+      animation: slideIn 0.4s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+    }
+    
+    .progress-bar {
+      transition: width 0.3s ease;
+    }
+    
+    .gradient-text {
+      background: linear-gradient(45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradient 3s ease infinite;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="min-h-full animated-gradient">
+  <div class="min-h-full py-8 px-4">
+   <div class="max-w-6xl mx-auto"><!-- Home Screen -->
+    <div id="homeScreen" class="fade-in">
+     <div class="text-center mb-12">
+      <h1 id="appTitle" class="text-5xl md:text-6xl font-bold gradient-text mb-4">Quick Recap of Topics ✨</h1>
+      <p id="appSubtitle" class="text-white text-lg md:text-xl opacity-90">Master your subjects with smart quizzes</p>
+     </div>
+     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div class="subject-card glass-card rounded-2xl p-6 cursor-pointer" onclick="startQuiz('physics')">
+       <div class="text-6xl mb-4 text-center">
+        ⚡
+       </div>
+       <h3 class="text-2xl font-bold text-white text-center mb-2">Physics</h3>
+       <p class="text-white opacity-80 text-center text-sm">Laws of motion, energy, and forces</p>
+      </div>
+      <div class="subject-card glass-card rounded-2xl p-6 cursor-pointer" onclick="startQuiz('chemistry')">
+       <div class="text-6xl mb-4 text-center">
+        🧪
+       </div>
+       <h3 class="text-2xl font-bold text-white text-center mb-2">Chemistry</h3>
+       <p class="text-white opacity-80 text-center text-sm">Elements, reactions, and compounds</p>
+      </div>
+      <div class="subject-card glass-card rounded-2xl p-6 cursor-pointer" onclick="startQuiz('mathematics')">
+       <div class="text-6xl mb-4 text-center">
+        📐
+       </div>
+       <h3 class="text-2xl font-bold text-white text-center mb-2">Mathematics</h3>
+       <p class="text-white opacity-80 text-center text-sm">Algebra, calculus, and geometry</p>
+      </div>
+      <div class="subject-card glass-card rounded-2xl p-6 cursor-pointer" onclick="startQuiz('biology')">
+       <div class="text-6xl mb-4 text-center">
+        🌿
+       </div>
+       <h3 class="text-2xl font-bold text-white text-center mb-2">Biology</h3>
+       <p class="text-white opacity-80 text-center text-sm">Life sciences and ecosystems</p>
+      </div>
+      <div class="subject-card glass-card rounded-2xl p-6 cursor-pointer" onclick="startQuiz('computer')">
+       <div class="text-6xl mb-4 text-center">
+        💻
+       </div>
+       <h3 class="text-2xl font-bold text-white text-center mb-2">Computer Science</h3>
+       <p class="text-white opacity-80 text-center text-sm">Programming and algorithms</p>
+      </div>
+      <div class="subject-card glass-card rounded-2xl p-6 cursor-pointer" onclick="startQuiz('english')">
+       <div class="text-6xl mb-4 text-center">
+        📘
+       </div>
+       <h3 class="text-2xl font-bold text-white text-center mb-2">English</h3>
+       <p class="text-white opacity-80 text-center text-sm">Grammar, literature, and writing</p>
+      </div>
+     </div>
+     <div class="glass-card rounded-2xl p-6 text-center"><button onclick="showRecapMode()" class="bg-white text-purple-600 font-semibold px-8 py-3 rounded-full hover:bg-opacity-90 transition"> 📚 Topic Recap Mode </button>
+      <p class="text-white opacity-80 text-sm mt-3">Review all concepts without taking a quiz</p>
+     </div>
+    </div><!-- Quiz Screen -->
+    <div id="quizScreen" class="hidden fade-in">
+     <div class="glass-card rounded-2xl p-6 mb-6">
+      <div class="flex justify-between items-center mb-4">
+       <h2 id="quizSubject" class="text-2xl font-bold text-white"></h2><span id="questionCounter" class="text-white font-semibold">1/10</span>
+      </div>
+      <div class="bg-white bg-opacity-30 rounded-full h-3 mb-2">
+       <div id="progressBar" class="progress-bar bg-white h-3 rounded-full" style="width: 10%"></div>
+      </div>
+     </div>
+     <div class="glass-card rounded-2xl p-8 mb-6 slide-in" id="questionCard">
+      <h3 id="questionText" class="text-xl font-semibold text-white mb-6"></h3>
+      <div id="optionsContainer" class="space-y-3"></div>
+     </div>
+     <div class="flex justify-between"><button onclick="goHome()" class="bg-white bg-opacity-20 text-white font-semibold px-6 py-3 rounded-full hover:bg-opacity-30 transition"> ← Back </button> <button id="nextButton" onclick="nextQuestion()" class="bg-white text-purple-600 font-semibold px-8 py-3 rounded-full hover:bg-opacity-90 transition hidden"> Next Question → </button>
+     </div>
+    </div><!-- Results Screen -->
+    <div id="resultsScreen" class="hidden fade-in">
+     <div class="glass-card rounded-2xl p-8 text-center mb-6">
+      <div class="text-6xl mb-4">
+       🎉
+      </div>
+      <h2 class="text-3xl font-bold text-white mb-2">Quiz Complete!</h2>
+      <p id="motivationalMessage" class="text-white opacity-90 text-lg mb-6"></p>
+      <div class="text-5xl font-bold text-white mb-2"><span id="finalScore">0</span>/10
+      </div>
+      <div id="categoryBadge" class="inline-block px-6 py-2 rounded-full text-white font-semibold text-lg mt-4"></div>
+     </div>
+     <div class="glass-card rounded-2xl p-8 mb-6">
+      <h3 class="text-2xl font-bold text-white mb-4">Recommended Resources</h3>
+      <div id="resourcesContainer" class="space-y-3"></div>
+     </div>
+     <div class="flex flex-col sm:flex-row gap-4 justify-center"><button id="reattemptButton" onclick="reattemptQuiz()" class="bg-white text-purple-600 font-semibold px-8 py-3 rounded-full hover:bg-opacity-90 transition"> 🔄 Reattempt Quiz </button> <button id="chooseSubjectButton" onclick="goHome()" class="bg-white bg-opacity-20 text-white font-semibold px-8 py-3 rounded-full hover:bg-opacity-30 transition"> 📚 Choose Another Subject </button>
+     </div>
+    </div><!-- Recap Mode Screen -->
+    <div id="recapScreen" class="hidden fade-in">
+     <div class="glass-card rounded-2xl p-6 mb-6">
+      <h2 class="text-2xl font-bold text-white text-center">Topic Recap Mode</h2>
+      <p class="text-white opacity-80 text-center mt-2">Review key concepts from all subjects</p>
+     </div>
+     <div id="recapContainer" class="space-y-4 mb-6"></div>
+     <div class="text-center"><button onclick="goHome()" class="bg-white text-purple-600 font-semibold px-8 py-3 rounded-full hover:bg-opacity-90 transition"> ← Back to Home </button>
+     </div>
+    </div>
+   </div>
+  </div><!-- Flashcard Modal -->
+  <div id="flashcardModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center p-4" style="z-index: 1000;">
+   <div class="glass-card rounded-2xl p-8 max-w-lg w-full slide-in">
+    <div class="text-5xl text-center mb-4">
+     💡
+    </div>
+    <h3 class="text-2xl font-bold text-white mb-4 text-center">Quick Concept</h3>
+    <p id="flashcardContent" class="text-white text-lg mb-6 leading-relaxed"></p><button onclick="closeFlashcard()" class="w-full bg-white text-purple-600 font-semibold px-6 py-3 rounded-full hover:bg-opacity-90 transition"> Got It ✅ </button>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      app_title: "Quick Recap of Topics ✨",
+      app_subtitle: "Master your subjects with smart quizzes",
+      next_button_text: "Next Question →",
+      submit_button_text: "Submit Answer",
+      reattempt_button_text: "🔄 Reattempt Quiz",
+      choose_subject_text: "📚 Choose Another Subject",
+      primary_color: "#8b5cf6",
+      secondary_color: "#ec4899",
+      background_start: "#ee7752",
+      background_end: "#23d5ab",
+      text_color: "#ffffff"
+    };
+    
+    let currentSubject = '';
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let selectedAnswer = null;
+    let quizData = {};
+    
+    const quizDatabase = {
+      physics: [
+        {
+          question: "What is Newton's Second Law of Motion?",
+          options: ["F = ma", "E = mc²", "V = IR", "P = VI"],
+          correct: 0,
+          explanation: "Newton's Second Law: Force equals mass times acceleration (F = ma). This fundamental law describes how force, mass, and acceleration are related."
+        },
+        {
+          question: "What is the SI unit of electric current?",
+          options: ["Volt", "Ampere", "Ohm", "Watt"],
+          correct: 1,
+          explanation: "The Ampere (A) is the SI unit of electric current. It measures the flow of electric charge through a conductor."
+        },
+        {
+          question: "What is the speed of light in vacuum?",
+          options: ["3 × 10⁸ m/s", "3 × 10⁶ m/s", "3 × 10⁷ m/s", "3 × 10⁹ m/s"],
+          correct: 0,
+          explanation: "Light travels at approximately 3 × 10⁸ meters per second (300,000 km/s) in vacuum. This is the universal speed limit."
+        },
+        {
+          question: "What type of energy does a stretched spring possess?",
+          options: ["Kinetic", "Potential", "Thermal", "Chemical"],
+          correct: 1,
+          explanation: "A stretched spring has elastic potential energy. This energy is stored due to the deformation of the spring and can be released."
+        },
+        {
+          question: "What is the formula for kinetic energy?",
+          options: ["mgh", "½mv²", "mv", "ma"],
+          correct: 1,
+          explanation: "Kinetic Energy = ½mv², where m is mass and v is velocity. This represents the energy of motion."
+        },
+        {
+          question: "What is Ohm's Law?",
+          options: ["V = IR", "P = VI", "E = mc²", "F = ma"],
+          correct: 0,
+          explanation: "Ohm's Law states V = IR, where V is voltage, I is current, and R is resistance. It's fundamental to understanding electric circuits."
+        },
+        {
+          question: "What is the acceleration due to gravity on Earth?",
+          options: ["9.8 m/s²", "10 m/s²", "8.9 m/s²", "11 m/s²"],
+          correct: 0,
+          explanation: "Earth's gravitational acceleration is approximately 9.8 m/s². This means objects accelerate at this rate when falling freely."
+        },
+        {
+          question: "What is the principle of conservation of energy?",
+          options: ["Energy can be created", "Energy can be destroyed", "Energy cannot be created or destroyed", "Energy always increases"],
+          correct: 2,
+          explanation: "The Law of Conservation of Energy states that energy cannot be created or destroyed, only transformed from one form to another."
+        },
+        {
+          question: "What is the unit of power?",
+          options: ["Joule", "Watt", "Newton", "Pascal"],
+          correct: 1,
+          explanation: "The Watt (W) is the SI unit of power. One watt equals one joule per second, measuring the rate of energy transfer."
+        },
+        {
+          question: "What is the relationship between frequency and wavelength?",
+          options: ["Directly proportional", "Inversely proportional", "No relationship", "Exponentially related"],
+          correct: 1,
+          explanation: "Frequency and wavelength are inversely proportional: λ = c/f. As frequency increases, wavelength decreases, and vice versa."
+        }
+      ],
+      chemistry: [
+        {
+          question: "What is the atomic number of Carbon?",
+          options: ["6", "12", "8", "14"],
+          correct: 0,
+          explanation: "Carbon has an atomic number of 6, meaning it has 6 protons in its nucleus. This defines it as carbon on the periodic table."
+        },
+        {
+          question: "What is the pH of a neutral solution?",
+          options: ["0", "7", "14", "1"],
+          correct: 1,
+          explanation: "A neutral solution has a pH of 7. Solutions with pH < 7 are acidic, and pH > 7 are basic (alkaline)."
+        },
+        {
+          question: "What is Avogadro's number?",
+          options: ["6.022 × 10²³", "3.14 × 10²³", "1.6 × 10⁻¹⁹", "9.8 × 10²³"],
+          correct: 0,
+          explanation: "Avogadro's number is 6.022 × 10²³. This is the number of particles (atoms, molecules) in one mole of a substance."
+        },
+        {
+          question: "What is the chemical formula for water?",
+          options: ["H₂O", "CO₂", "O₂", "H₂O₂"],
+          correct: 0,
+          explanation: "Water's chemical formula is H₂O: two hydrogen atoms bonded to one oxygen atom. It's essential for all known forms of life."
+        },
+        {
+          question: "What type of bond involves sharing of electrons?",
+          options: ["Ionic", "Covalent", "Metallic", "Hydrogen"],
+          correct: 1,
+          explanation: "Covalent bonds involve the sharing of electron pairs between atoms. This creates strong bonds in molecules like H₂O and CO₂."
+        },
+        {
+          question: "What is the most abundant gas in Earth's atmosphere?",
+          options: ["Oxygen", "Carbon dioxide", "Nitrogen", "Hydrogen"],
+          correct: 2,
+          explanation: "Nitrogen makes up about 78% of Earth's atmosphere. Oxygen is second at about 21%, with other gases making up the remainder."
+        },
+        {
+          question: "What is the process of a solid turning directly into gas?",
+          options: ["Melting", "Evaporation", "Sublimation", "Condensation"],
+          correct: 2,
+          explanation: "Sublimation is when a solid transforms directly into a gas without passing through the liquid phase. Dry ice (CO₂) is a common example."
+        },
+        {
+          question: "What is the valency of oxygen?",
+          options: ["1", "2", "3", "4"],
+          correct: 1,
+          explanation: "Oxygen has a valency of 2, meaning it typically forms two bonds. This is why water is H₂O (two hydrogens bonded to one oxygen)."
+        },
+        {
+          question: "What is an exothermic reaction?",
+          options: ["Absorbs heat", "Releases heat", "No heat change", "Requires light"],
+          correct: 1,
+          explanation: "An exothermic reaction releases heat energy to the surroundings. Combustion and many oxidation reactions are exothermic."
+        },
+        {
+          question: "What is the symbol for Gold on the periodic table?",
+          options: ["Go", "Gd", "Au", "Ag"],
+          correct: 2,
+          explanation: "Gold's symbol is Au, from its Latin name 'Aurum'. It's a precious metal with atomic number 79."
+        }
+      ],
+      mathematics: [
+        {
+          question: "What is the value of π (pi) approximately?",
+          options: ["3.14", "2.71", "1.41", "1.73"],
+          correct: 0,
+          explanation: "Pi (π) ≈ 3.14159... It's the ratio of a circle's circumference to its diameter, a fundamental constant in mathematics."
+        },
+        {
+          question: "What is the derivative of x²?",
+          options: ["x", "2x", "x²", "2"],
+          correct: 1,
+          explanation: "The derivative of x² is 2x. This follows the power rule: d/dx(xⁿ) = nxⁿ⁻¹."
+        },
+        {
+          question: "What is the Pythagorean theorem?",
+          options: ["a + b = c", "a² + b² = c²", "a × b = c", "a/b = c"],
+          correct: 1,
+          explanation: "The Pythagorean theorem states a² + b² = c² for right triangles, where c is the hypotenuse and a, b are the other sides."
+        },
+        {
+          question: "What is the sum of angles in a triangle?",
+          options: ["90°", "180°", "270°", "360°"],
+          correct: 1,
+          explanation: "The sum of all interior angles in any triangle always equals 180°. This is a fundamental property of Euclidean geometry."
+        },
+        {
+          question: "What is the quadratic formula?",
+          options: ["x = -b/2a", "x = (-b ± √(b²-4ac))/2a", "x = b²-4ac", "x = a+b+c"],
+          correct: 1,
+          explanation: "The quadratic formula x = (-b ± √(b²-4ac))/2a solves equations of the form ax² + bx + c = 0."
+        },
+        {
+          question: "What is the value of sin(90°)?",
+          options: ["0", "1", "0.5", "√3/2"],
+          correct: 1,
+          explanation: "sin(90°) = 1. This is a key value in trigonometry, representing the sine of a right angle."
+        },
+        {
+          question: "What is the formula for the area of a circle?",
+          options: ["πr", "2πr", "πr²", "πd"],
+          correct: 2,
+          explanation: "The area of a circle is πr², where r is the radius. This formula comes from integrating the circumference."
+        },
+        {
+          question: "What is the slope-intercept form of a line?",
+          options: ["y = mx + b", "ax + by = c", "y = x²", "y = 1/x"],
+          correct: 0,
+          explanation: "The slope-intercept form is y = mx + b, where m is the slope and b is the y-intercept."
+        },
+        {
+          question: "What is the integral of 1/x?",
+          options: ["x²", "ln|x|", "1/x²", "e^x"],
+          correct: 1,
+          explanation: "The integral of 1/x is ln|x| + C, where C is the constant of integration. This is a fundamental integral in calculus."
+        },
+        {
+          question: "What is the factorial of 5 (5!)?",
+          options: ["25", "120", "60", "100"],
+          correct: 1,
+          explanation: "5! = 5 × 4 × 3 × 2 × 1 = 120. Factorials are used in permutations, combinations, and probability."
+        }
+      ],
+      biology: [
+        {
+          question: "What is the powerhouse of the cell?",
+          options: ["Nucleus", "Mitochondria", "Ribosome", "Chloroplast"],
+          correct: 1,
+          explanation: "Mitochondria are the powerhouse of the cell. They produce ATP through cellular respiration, providing energy for cellular processes."
+        },
+        {
+          question: "What is the process by which plants make food?",
+          options: ["Respiration", "Photosynthesis", "Digestion", "Fermentation"],
+          correct: 1,
+          explanation: "Photosynthesis is the process where plants use sunlight, water, and CO₂ to produce glucose and oxygen. Formula: 6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂"
+        },
+        {
+          question: "What is DNA?",
+          options: ["Protein", "Carbohydrate", "Nucleic acid", "Lipid"],
+          correct: 2,
+          explanation: "DNA (Deoxyribonucleic Acid) is a nucleic acid that carries genetic information. It has a double helix structure discovered by Watson and Crick."
+        },
+        {
+          question: "How many chambers does the human heart have?",
+          options: ["2", "3", "4", "5"],
+          correct: 2,
+          explanation: "The human heart has 4 chambers: two atria (upper chambers) and two ventricles (lower chambers). This allows efficient separation of oxygenated and deoxygenated blood."
+        },
+        {
+          question: "What is the basic unit of life?",
+          options: ["Tissue", "Organ", "Cell", "Atom"],
+          correct: 2,
+          explanation: "The cell is the basic unit of life. All living organisms are composed of one or more cells, which carry out all life processes."
+        },
+        {
+          question: "What is the function of red blood cells?",
+          options: ["Fight infection", "Transport oxygen", "Clot blood", "Produce hormones"],
+          correct: 1,
+          explanation: "Red blood cells (erythrocytes) transport oxygen from lungs to body tissues using hemoglobin, and carry CO₂ back to the lungs."
+        },
+        {
+          question: "What is the largest organ in the human body?",
+          options: ["Liver", "Brain", "Skin", "Heart"],
+          correct: 2,
+          explanation: "The skin is the largest organ, covering about 2 square meters in adults. It protects against pathogens, regulates temperature, and provides sensation."
+        },
+        {
+          question: "What is osmosis?",
+          options: ["Movement of solutes", "Movement of water across membrane", "Cell division", "Energy production"],
+          correct: 1,
+          explanation: "Osmosis is the movement of water molecules across a semi-permeable membrane from low to high solute concentration until equilibrium is reached."
+        },
+        {
+          question: "What are the building blocks of proteins?",
+          options: ["Nucleotides", "Amino acids", "Fatty acids", "Glucose"],
+          correct: 1,
+          explanation: "Proteins are made of amino acids linked by peptide bonds. There are 20 different amino acids that combine to form all proteins."
+        },
+        {
+          question: "What is the function of chlorophyll?",
+          options: ["Store energy", "Absorb light", "Transport water", "Break down food"],
+          correct: 1,
+          explanation: "Chlorophyll is the green pigment in plants that absorbs light energy (mainly red and blue wavelengths) for photosynthesis."
+        }
+      ],
+      computer: [
+        {
+          question: "What does CPU stand for?",
+          options: ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Computer Processing Utility"],
+          correct: 0,
+          explanation: "CPU stands for Central Processing Unit. It's the brain of the computer that executes instructions and performs calculations."
+        },
+        {
+          question: "What is binary code based on?",
+          options: ["0 and 1", "A and B", "True and False", "Yes and No"],
+          correct: 0,
+          explanation: "Binary code uses only two digits: 0 and 1. All computer data and instructions are ultimately represented in binary form."
+        },
+        {
+          question: "What is an algorithm?",
+          options: ["A programming language", "A step-by-step procedure", "A type of computer", "A software application"],
+          correct: 1,
+          explanation: "An algorithm is a step-by-step procedure or formula for solving a problem. It's the foundation of all computer programs."
+        },
+        {
+          question: "What does RAM stand for?",
+          options: ["Read Access Memory", "Random Access Memory", "Rapid Application Memory", "Read And Modify"],
+          correct: 1,
+          explanation: "RAM stands for Random Access Memory. It's temporary storage that the computer uses to hold data and programs currently in use."
+        },
+        {
+          question: "What is the time complexity of binary search?",
+          options: ["O(n)", "O(log n)", "O(n²)", "O(1)"],
+          correct: 1,
+          explanation: "Binary search has O(log n) time complexity. It repeatedly divides the search space in half, making it very efficient for sorted data."
+        },
+        {
+          question: "What is a loop in programming?",
+          options: ["A bug", "A repeated execution", "A variable", "A function"],
+          correct: 1,
+          explanation: "A loop is a programming construct that repeats a block of code multiple times. Common types include for, while, and do-while loops."
+        },
+        {
+          question: "What does HTML stand for?",
+          options: ["Hyper Text Markup Language", "High Tech Modern Language", "Home Tool Markup Language", "Hyperlinks and Text Markup Language"],
+          correct: 0,
+          explanation: "HTML stands for Hyper Text Markup Language. It's the standard language for creating web pages and web applications."
+        },
+        {
+          question: "What is a variable in programming?",
+          options: ["A constant value", "A storage location", "A function", "An operator"],
+          correct: 1,
+          explanation: "A variable is a named storage location in memory that holds a value. The value can change during program execution."
+        },
+        {
+          question: "What is the purpose of an if statement?",
+          options: ["Loop execution", "Make decisions", "Store data", "Define functions"],
+          correct: 1,
+          explanation: "An if statement allows conditional execution of code. It makes decisions based on whether a condition is true or false."
+        },
+        {
+          question: "What is object-oriented programming?",
+          options: ["Programming with objects", "A programming paradigm", "A type of loop", "A data structure"],
+          correct: 1,
+          explanation: "Object-Oriented Programming (OOP) is a paradigm based on objects that contain data and methods. Key concepts include encapsulation, inheritance, and polymorphism."
+        }
+      ],
+      english: [
+        {
+          question: "What is a noun?",
+          options: ["An action word", "A describing word", "A person, place, or thing", "A connecting word"],
+          correct: 2,
+          explanation: "A noun is a word that names a person, place, thing, or idea. Examples: teacher, London, book, happiness."
+        },
+        {
+          question: "What is a metaphor?",
+          options: ["A direct comparison", "An indirect comparison", "A rhyme scheme", "A type of poem"],
+          correct: 1,
+          explanation: "A metaphor is an indirect comparison that says one thing IS another. Example: 'Time is money' (time isn't literally money, but we treat it as valuable)."
+        },
+        {
+          question: "What is the past tense of 'go'?",
+          options: ["Goed", "Gone", "Went", "Going"],
+          correct: 2,
+          explanation: "The past tense of 'go' is 'went'. This is an irregular verb, so it doesn't follow the standard -ed pattern."
+        },
+        {
+          question: "What is alliteration?",
+          options: ["Repetition of vowel sounds", "Repetition of consonant sounds", "Rhyming words", "Opposite meanings"],
+          correct: 1,
+          explanation: "Alliteration is the repetition of the same consonant sound at the beginning of nearby words. Example: 'Peter Piper picked a peck of pickled peppers.'"
+        },
+        {
+          question: "What is a synonym?",
+          options: ["Opposite meaning", "Same meaning", "Similar spelling", "Rhyming word"],
+          correct: 1,
+          explanation: "A synonym is a word with the same or similar meaning as another word. Examples: happy/joyful, big/large, fast/quick."
+        },
+        {
+          question: "What is the subject in a sentence?",
+          options: ["The action", "Who/what does the action", "The description", "The ending"],
+          correct: 1,
+          explanation: "The subject is who or what the sentence is about - the person or thing performing the action. In 'The cat sleeps,' 'cat' is the subject."
+        },
+        {
+          question: "What is personification?",
+          options: ["Comparing using 'like'", "Giving human qualities to non-human things", "Exaggeration", "Repetition"],
+          correct: 1,
+          explanation: "Personification gives human characteristics to non-human things. Example: 'The wind whispered through the trees' (wind can't actually whisper)."
+        },
+        {
+          question: "What is an adjective?",
+          options: ["Action word", "Describing word", "Naming word", "Connecting word"],
+          correct: 1,
+          explanation: "An adjective is a word that describes or modifies a noun. Examples: beautiful, tall, red, happy."
+        },
+        {
+          question: "What is the plural of 'child'?",
+          options: ["Childs", "Childes", "Children", "Childrens"],
+          correct: 2,
+          explanation: "The plural of 'child' is 'children'. This is an irregular plural that doesn't follow the standard -s or -es pattern."
+        },
+        {
+          question: "What is a simile?",
+          options: ["Direct comparison", "Comparison using 'like' or 'as'", "Exaggeration", "Repetition"],
+          correct: 1,
+          explanation: "A simile is a comparison using 'like' or 'as'. Examples: 'as brave as a lion', 'runs like the wind'."
+        }
+      ]
+    };
+    
+    const resources = {
+      beginner: {
+        videos: [
+          { title: "Basic Concepts Explained", url: "https://www.youtube.com/results?search_query=basic+concepts+" },
+          { title: "Fundamentals Tutorial", url: "https://www.youtube.com/results?search_query=fundamentals+tutorial+" },
+          { title: "Introduction for Beginners", url: "https://www.youtube.com/results?search_query=introduction+for+beginners+" }
+        ],
+        message: "Great start! Focus on building strong fundamentals. Practice regularly and don't hesitate to revisit basic concepts."
+      },
+      intermediate: {
+        videos: [
+          { title: "Intermediate Problem Solving", url: "https://www.youtube.com/results?search_query=intermediate+problem+solving+" },
+          { title: "Advanced Concepts", url: "https://www.youtube.com/results?search_query=advanced+concepts+" },
+          { title: "Practice Questions", url: "https://www.youtube.com/results?search_query=practice+questions+" }
+        ],
+        message: "You're improving! Keep practicing to master these concepts. Focus on understanding the 'why' behind each solution."
+      },
+      advanced: {
+        videos: [
+          { title: "Olympiad Level Problems", url: "https://www.youtube.com/results?search_query=olympiad+level+problems+" },
+          { title: "Competition Preparation", url: "https://www.youtube.com/results?search_query=competition+preparation+" },
+          { title: "Advanced Applications", url: "https://www.youtube.com/results?search_query=advanced+applications+" }
+        ],
+        message: "Excellent work! You're ready for advanced challenges. Consider participating in competitions and exploring deeper topics."
+      }
+    };
+    
+    function startQuiz(subject) {
+      currentSubject = subject;
+      currentQuestionIndex = 0;
+      score = 0;
+      selectedAnswer = null;
+      
+      document.getElementById('homeScreen').classList.add('hidden');
+      document.getElementById('quizScreen').classList.remove('hidden');
+      
+      const subjectNames = {
+        physics: 'Physics ⚡',
+        chemistry: 'Chemistry 🧪',
+        mathematics: 'Mathematics 📐',
+        biology: 'Biology 🌿',
+        computer: 'Computer Science 💻',
+        english: 'English 📘'
+      };
+      
+      document.getElementById('quizSubject').textContent = subjectNames[subject];
+      loadQuestion();
+    }
+    
+    function loadQuestion() {
+      const questions = quizDatabase[currentSubject];
+      const question = questions[currentQuestionIndex];
+      
+      document.getElementById('questionText').textContent = question.question;
+      document.getElementById('questionCounter').textContent = `${currentQuestionIndex + 1}/10`;
+      document.getElementById('progressBar').style.width = `${((currentQuestionIndex + 1) / 10) * 100}%`;
+      
+      const optionsContainer = document.getElementById('optionsContainer');
+      optionsContainer.innerHTML = '';
+      
+      question.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.className = 'w-full text-left p-4 rounded-xl bg-white bg-opacity-20 text-white font-medium hover:bg-opacity-30 transition';
+        button.textContent = option;
+        button.onclick = () => selectAnswer(index);
+        optionsContainer.appendChild(button);
+      });
+      
+      document.getElementById('nextButton').classList.add('hidden');
+      selectedAnswer = null;
+    }
+    
+    function selectAnswer(index) {
+      if (selectedAnswer !== null) return;
+      
+      selectedAnswer = index;
+      const questions = quizDatabase[currentSubject];
+      const question = questions[currentQuestionIndex];
+      const buttons = document.getElementById('optionsContainer').children;
+      
+      if (index === question.correct) {
+        buttons[index].classList.remove('bg-opacity-20');
+        buttons[index].classList.add('bg-green-500');
+        score++;
+      } else {
+        buttons[index].classList.remove('bg-opacity-20');
+        buttons[index].classList.add('bg-red-500');
+        buttons[question.correct].classList.remove('bg-opacity-20');
+        buttons[question.correct].classList.add('bg-green-500');
+        showFlashcard(question.explanation);
+      }
+      
+      document.getElementById('nextButton').classList.remove('hidden');
+    }
+    
+    function showFlashcard(content) {
+      document.getElementById('flashcardContent').textContent = content;
+      const modal = document.getElementById('flashcardModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    
+    function closeFlashcard() {
+      const modal = document.getElementById('flashcardModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    
+    function nextQuestion() {
+      currentQuestionIndex++;
+      
+      if (currentQuestionIndex < 10) {
+        loadQuestion();
+      } else {
+        showResults();
+      }
+    }
+    
+    function showResults() {
+      document.getElementById('quizScreen').classList.add('hidden');
+      document.getElementById('resultsScreen').classList.remove('hidden');
+      
+      document.getElementById('finalScore').textContent = score;
+      
+      let category, categoryClass, motivationalMsg;
+      
+      if (score <= 4) {
+        category = 'Beginner';
+        categoryClass = 'bg-blue-500';
+        motivationalMsg = resources.beginner.message;
+      } else if (score <= 7) {
+        category = 'Intermediate';
+        categoryClass = 'bg-yellow-500';
+        motivationalMsg = resources.intermediate.message;
+      } else {
+        category = 'Advanced';
+        categoryClass = 'bg-green-500';
+        motivationalMsg = resources.advanced.message;
+      }
+      
+      const badge = document.getElementById('categoryBadge');
+      badge.textContent = category;
+      badge.className = `inline-block px-6 py-2 rounded-full text-white font-semibold text-lg mt-4 ${categoryClass}`;
+      
+      document.getElementById('motivationalMessage').textContent = motivationalMsg;
+      
+      const resourcesContainer = document.getElementById('resourcesContainer');
+      resourcesContainer.innerHTML = '';
+      
+      const categoryResources = score <= 4 ? resources.beginner : score <= 7 ? resources.intermediate : resources.advanced;
+      const subjectQuery = currentSubject;
+      
+      categoryResources.videos.forEach(video => {
+        const link = document.createElement('a');
+        link.href = video.url + subjectQuery;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'block p-4 bg-white bg-opacity-20 rounded-xl text-white hover:bg-opacity-30 transition';
+        link.innerHTML = `<span class="font-semibold">📺 ${video.title}</span>`;
+        resourcesContainer.appendChild(link);
+      });
+      
+      saveQuizResult();
+    }
+    
+    function saveQuizResult() {
+      const results = JSON.parse(localStorage.getItem('quizResults') || '[]');
+      results.push({
+        subject: currentSubject,
+        score: score,
+        date: new Date().toISOString()
+      });
+      localStorage.setItem('quizResults', JSON.stringify(results));
+    }
+    
+    function reattemptQuiz() {
+      currentQuestionIndex = 0;
+      score = 0;
+      selectedAnswer = null;
+      
+      document.getElementById('resultsScreen').classList.add('hidden');
+      document.getElementById('quizScreen').classList.remove('hidden');
+      
+      loadQuestion();
+    }
+    
+    function goHome() {
+      document.getElementById('quizScreen').classList.add('hidden');
+      document.getElementById('resultsScreen').classList.add('hidden');
+      document.getElementById('recapScreen').classList.add('hidden');
+      document.getElementById('homeScreen').classList.remove('hidden');
+    }
+    
+    function showRecapMode() {
+      document.getElementById('homeScreen').classList.add('hidden');
+      document.getElementById('recapScreen').classList.remove('hidden');
+      
+      const recapContainer = document.getElementById('recapContainer');
+      recapContainer.innerHTML = '';
+      
+      const subjects = ['physics', 'chemistry', 'mathematics', 'biology', 'computer', 'english'];
+      const subjectNames = {
+        physics: 'Physics ⚡',
+        chemistry: 'Chemistry 🧪',
+        mathematics: 'Mathematics 📐',
+        biology: 'Biology 🌿',
+        computer: 'Computer Science 💻',
+        english: 'English 📘'
+      };
+      
+      subjects.forEach(subject => {
+        const subjectCard = document.createElement('div');
+        subjectCard.className = 'glass-card rounded-2xl p-6';
+        
+        const title = document.createElement('h3');
+        title.className = 'text-2xl font-bold text-white mb-4';
+        title.textContent = subjectNames[subject];
+        subjectCard.appendChild(title);
+        
+        quizDatabase[subject].forEach((q, index) => {
+          const conceptCard = document.createElement('div');
+          conceptCard.className = 'bg-white bg-opacity-10 rounded-xl p-4 mb-3';
+          
+          const questionText = document.createElement('p');
+          questionText.className = 'text-white font-semibold mb-2';
+          questionText.textContent = `${index + 1}. ${q.question}`;
+          
+          const explanation = document.createElement('p');
+          explanation.className = 'text-white opacity-90 text-sm';
+          explanation.textContent = q.explanation;
+          
+          conceptCard.appendChild(questionText);
+          conceptCard.appendChild(explanation);
+          subjectCard.appendChild(conceptCard);
+        });
+        
+        recapContainer.appendChild(subjectCard);
+      });
+    }
+    
+    async function onConfigChange(config) {
+      const appTitle = document.getElementById('appTitle');
+      const appSubtitle = document.getElementById('appSubtitle');
+      const nextButton = document.getElementById('nextButton');
+      const reattemptButton = document.getElementById('reattemptButton');
+      const chooseSubjectButton = document.getElementById('chooseSubjectButton');
+      
+      if (appTitle) {
+        appTitle.textContent = config.app_title || defaultConfig.app_title;
+      }
+      if (appSubtitle) {
+        appSubtitle.textContent = config.app_subtitle || defaultConfig.app_subtitle;
+      }
+      if (nextButton) {
+        nextButton.textContent = config.next_button_text || defaultConfig.next_button_text;
+      }
+      if (reattemptButton) {
+        reattemptButton.textContent = config.reattempt_button_text || defaultConfig.reattempt_button_text;
+      }
+      if (chooseSubjectButton) {
+        chooseSubjectButton.textContent = config.choose_subject_text || defaultConfig.choose_subject_text;
+      }
+    }
+    
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig: defaultConfig,
+        onConfigChange: onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["app_title", config.app_title || defaultConfig.app_title],
+          ["app_subtitle", config.app_subtitle || defaultConfig.app_subtitle],
+          ["next_button_text", config.next_button_text || defaultConfig.next_button_text],
+          ["submit_button_text", config.submit_button_text || defaultConfig.submit_button_text],
+          ["reattempt_button_text", config.reattempt_button_text || defaultConfig.reattempt_button_text],
+          ["choose_subject_text", config.choose_subject_text || defaultConfig.choose_subject_text]
+        ])
+      });
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99811971937459d8',t:'MTc2MjA1OTk1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
