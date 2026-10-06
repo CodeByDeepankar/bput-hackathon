@@ -42,7 +42,7 @@ export async function POST(request) {
       role,
       provisional: false,
       name: name ?? existing?.name ?? null,
-      school_id: schoolId || existing?.school_id || "default",
+      school_id: schoolId || existing?.school_id || null,
       class: klass ?? existing?.class ?? null,
       created_at: existing?.created_at ?? nowIso(),
       updated_at: nowIso(),

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { supabase, run, runSingle } from "../../_utils/supabase";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   try {
@@ -218,6 +219,10 @@ export async function GET(request) {
       totalStudents: students.length,
       totalModules: modules.length,
       schoolId,
+    }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+      },
     });
   } catch (error) {
     console.error("[/api/teacher/student-progress] Error:", error);

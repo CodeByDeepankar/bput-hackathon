@@ -143,18 +143,18 @@ function ModuleManager() {
         userId: user.id,
         role: "teacher",
         name: user.fullName || user.firstName || "Teacher",
-        schoolId: schoolId || "default",
+        schoolId: schoolId || null,
       });
       if (user.update) {
         await user.update({
           unsafeMetadata: {
             ...(user.unsafeMetadata || {}),
             role: "teacher",
-            schoolId: schoolId || "default",
+            schoolId: schoolId || null,
           },
         }).catch(() => {});
       }
-      setRoleDoc(updated?.user || { role: "teacher", school_id: schoolId || "default", user_id: user.id });
+      setRoleDoc(updated?.user || { role: "teacher", school_id: schoolId || null, user_id: user.id });
     } catch (err) {
       setRoleError("Failed to update account role: " + err.message);
     } finally {
@@ -418,10 +418,11 @@ function ModuleManager() {
   const startEditLesson = (les) => {
     setEditingLessonId(les.id);
     const resolvedType = getVideoType(les);
+    const formVideoType = resolvedType === 'youtube' ? 'youtube' : 'uploaded';
     setLessonForm({
       title: les.title || "",
       description: les.description || "",
-      videoType: resolvedType,
+      videoType: formVideoType,
       videoFile: null,
       videoPath: les.video_path || les.videoPath || "",
       videoUrl: les.video_url || les.videoUrl || "",
@@ -1013,7 +1014,7 @@ function ModuleManager() {
               <CheckCircle className="w-5 h-5 text-emerald-400" /> Student Lesson Progress Tracker
             </CardTitle>
             <p className="text-xs text-slate-400 mt-1">
-              Real-time online completion data calculated from student activity across your school's modules
+              Real-time online completion data calculated from student activity across your school&apos;s modules
             </p>
           </div>
           <Button

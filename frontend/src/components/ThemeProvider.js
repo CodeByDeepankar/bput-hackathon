@@ -19,8 +19,7 @@ export default function ThemeProvider({ children }) {
         return;
       }
     } catch {}
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setTheme(prefersDark ? "dark" : "light");
+    setTheme("light");
   }, []);
 
   // Apply class to html element and persist

@@ -24,7 +24,10 @@ export async function GET(request) {
     const teacher = await requireUserRole(userId);
     ensureTeacher(teacher);
 
-    const schoolId = teacher.school_id || "default";
+    const schoolId = teacher.school_id;
+    if (!schoolId) {
+      return NextResponse.json({ error: "Teacher is not assigned to a school" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const classFilter = searchParams.get("class");
@@ -73,7 +76,10 @@ export async function POST(request) {
     const teacher = await requireUserRole(userId);
     ensureTeacher(teacher);
 
-    const schoolId = teacher.school_id || "default";
+    const schoolId = teacher.school_id;
+    if (!schoolId) {
+      return NextResponse.json({ error: "Teacher is not assigned to a school" }, { status: 403 });
+    }
 
     const body = await request.json();
     const { title, description, class: klass, subjectId, thumbnailUrl, published = true } = body || {};

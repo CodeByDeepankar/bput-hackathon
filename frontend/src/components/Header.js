@@ -37,17 +37,15 @@ export default function Header() {
       className={`${headerRightPad} w-full max-w-7xl mx-auto px-4 py-3 flex justify-between items-center relative z-50`}
       style={isLight ? { backgroundColor: "#ffffff", color: "#000000" } : { backgroundColor: "#000000", color: "#f8fafc" }}
     >
-      <div className="flex items-center gap-2">
-        {/* Use public asset with absolute path; fallback to initials if missing */}
-        {(() => {
-          const [ok] = [true];
-          return ok ? (
-            <Image src="/logo.webp" alt="Logo" width={32} height={32} className="rounded" />
-          ) : (
-            <div className="w-8 h-8 rounded bg-white text-blue-600 flex items-center justify-center text-xs font-bold">SL</div>
-          );
-        })()}
-        <h1 className="text-xl font-bold">GYANARATNA</h1>
+      <div className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <img
+            src="/logo.webp"
+            alt="Gyanaratna Logo"
+            className="h-8 w-8 object-contain rounded-md"
+          />
+          <h1 className="text-xl font-bold tracking-tight">GYANARATNA</h1>
+        </Link>
       </div>
       <nav>
         {isWelcome ? (

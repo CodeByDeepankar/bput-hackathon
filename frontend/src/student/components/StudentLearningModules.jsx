@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { useStudentModules } from "@/hooks/useApi";
 import apiClient from "@/lib/api";
-import { getYouTubeEmbedUrl, getVideoType } from "@/lib/videoHelpers";
+import { getVideoType, isYouTubeUrl, getYouTubeVideoId } from "@/lib/videoHelpers";
 import {
   downloadVideoForOffline,
   removeOfflineVideo,
@@ -36,6 +36,7 @@ import { Card, CardContent } from "@/student/components/ui/card";
 import { Badge } from "@/student/components/ui/badge";
 import { Button } from "@/student/components/ui/button";
 import { Progress } from "@/student/components/ui/progress";
+import VideoPlayer from "./VideoPlayer";
 
 function formatDuration(seconds) {
   if (!seconds || seconds <= 0) return "Self-paced";
@@ -248,16 +249,16 @@ export default function StudentLearningModules() {
           return (
             <Card
               key={mod.id}
-              className="bg-slate-800/80 border-slate-700/60 shadow-xl overflow-hidden backdrop-blur-md"
+              className="bg-white border-[#E2E8F0] shadow-xs overflow-hidden"
             >
               {/* Module Header */}
               <div
                 onClick={() => toggleModuleExpand(mod.id)}
-                className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-slate-700/30 transition-colors border-b border-slate-700/50"
+                className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 transition-colors border-b border-[#E2E8F0]"
               >
                 <div className="flex items-start gap-4">
                   {mod.thumbnail_url ? (
-                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-700">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-[#E2E8F0]">
                       <img
                         src={mod.thumbnail_url}
                         alt={mod.title}
@@ -265,41 +266,41 @@ export default function StudentLearningModules() {
                       />
                     </div>
                   ) : (
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 grid place-items-center text-white shrink-0 shadow-lg">
+                    <div className="w-14 h-14 rounded-xl bg-[#F1EEFF] grid place-items-center text-[#635BFF] shrink-0 shadow-xs">
                       <BookOpen className="w-7 h-7" />
                     </div>
                   )}
 
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge className="bg-indigo-600/90 text-white text-[11px]">
+                      <Badge className="bg-[#635BFF] text-white text-[11px]">
                         {mod.subject?.name || "General"}
                       </Badge>
-                      <Badge variant="outline" className="text-slate-300 border-slate-600 text-[11px]">
+                      <Badge variant="outline" className="text-[#64748B] border-[#E2E8F0] text-[11px]">
                         {mod.class}
                       </Badge>
                       {stats.isCompleted && (
-                        <Badge className="bg-emerald-600 text-white text-[11px] gap-1">
+                        <Badge className="bg-[#22C55E] text-white text-[11px] gap-1">
                           <Check className="w-3 h-3" /> Module Completed
                         </Badge>
                       )}
                     </div>
-                    <h3 className="text-lg font-bold text-white leading-snug">{mod.title}</h3>
+                    <h3 className="text-lg font-bold text-[#172033] leading-snug">{mod.title}</h3>
                     {mod.description && (
-                      <p className="text-xs text-slate-300 line-clamp-2">{mod.description}</p>
+                      <p className="text-xs text-[#64748B] line-clamp-2">{mod.description}</p>
                     )}
                   </div>
                 </div>
 
                 {/* Progress & Toggle */}
-                <div className="flex items-center justify-between md:justify-end gap-6 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-700/40">
+                <div className="flex items-center justify-between md:justify-end gap-6 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#E2E8F0]">
                   <div className="w-36 space-y-1 text-right">
-                    <div className="flex items-center justify-between text-xs text-slate-300 font-medium">
+                    <div className="flex items-center justify-between text-xs text-[#64748B] font-medium">
                       <span>Progress</span>
-                      <span className="text-indigo-400 font-bold">{percent}%</span>
+                      <span className="text-[#635BFF] font-bold">{percent}%</span>
                     </div>
-                    <Progress value={percent} className="h-2 bg-slate-900" />
-                    <div className="text-[10px] text-slate-400">
+                    <Progress value={percent} className="h-2 bg-[#EFF6FF]" indicatorClassName="bg-[#635BFF]" />
+                    <div className="text-[10px] text-[#64748B]">
                       {stats.completedLessons} of {stats.totalLessons} lessons
                     </div>
                   </div>
@@ -307,7 +308,7 @@ export default function StudentLearningModules() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-slate-400 hover:text-white p-1 h-8 w-8"
+                    className="text-[#64748B] hover:text-[#172033] p-1 h-8 w-8"
                   >
                     {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </Button>
@@ -316,10 +317,10 @@ export default function StudentLearningModules() {
 
               {/* Module Content & Lessons (Collapsible) */}
               {isExpanded && (
-                <CardContent className="p-5 pt-4 space-y-4 bg-slate-900/40">
+                <CardContent className="p-5 pt-4 space-y-4 bg-[#F7F8FC]">
                   {/* Lessons List */}
                   {!mod.lessons || mod.lessons.length === 0 ? (
-                    <div className="py-6 text-center text-xs text-slate-400">
+                    <div className="py-6 text-center text-xs text-[#64748B]">
                       No video lessons published for this module yet.
                     </div>
                   ) : (
@@ -334,39 +335,39 @@ export default function StudentLearningModules() {
                             key={lesson.id}
                             className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                               isCompleted
-                                ? "bg-slate-800/40 border-slate-700/40 opacity-90"
-                                : "bg-slate-800/90 border-slate-700/70 hover:border-indigo-500/50"
+                                ? "bg-slate-50 border-[#E2E8F0] opacity-90"
+                                : "bg-white border-[#E2E8F0] hover:border-[#635BFF]/50 shadow-xs"
                             }`}
                           >
                             <div className="flex items-start gap-3 min-w-0">
                               <button
                                 onClick={(e) => handleToggleCompletion(e, lesson, mod)}
                                 disabled={updatingLessonId === lesson.id}
-                                className="mt-0.5 shrink-0 text-slate-400 hover:text-indigo-400 transition-colors"
+                                className="mt-0.5 shrink-0 text-[#64748B] hover:text-[#635BFF] transition-colors"
                               >
                                 {updatingLessonId === lesson.id ? (
-                                  <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+                                  <Loader2 className="w-5 h-5 animate-spin text-[#635BFF]" />
                                 ) : isCompleted ? (
-                                  <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-500/20" />
+                                  <CheckCircle2 className="w-5 h-5 text-[#22C55E] fill-[#22C55E]/20" />
                                 ) : (
-                                  <Circle className="w-5 h-5" />
+                                  <Circle className="w-5 h-5 text-[#64748B]" />
                                 )}
                               </button>
 
                               <div className="space-y-0.5 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-xs text-slate-400 font-semibold">
+                                  <span className="text-xs text-[#64748B] font-semibold">
                                     Lesson {lesson.order_index}
                                   </span>
                                   {lesson.is_required && (
-                                    <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-500/30 bg-amber-500/10">
+                                    <Badge variant="outline" className="text-[10px] text-[#F59E0B] border-[#F59E0B]/30 bg-[#FFF8E7]">
                                       Required
                                     </Badge>
                                   )}
                                 </div>
                                 <h4
                                   onClick={() => openVideoPlayer(lesson, mod)}
-                                  className="text-sm font-semibold text-white hover:text-indigo-300 cursor-pointer truncate"
+                                  className="text-sm font-semibold text-[#172033] hover:text-[#635BFF] cursor-pointer truncate"
                                 >
                                   {lesson.title}
                                 </h4>
@@ -375,31 +376,31 @@ export default function StudentLearningModules() {
 
                             {/* Right Actions & Controls */}
                             <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                              <div className="hidden md:flex items-center gap-1 text-xs text-slate-400 mr-1">
+                              <div className="hidden md:flex items-center gap-1 text-xs text-[#64748B] mr-1">
                                 <Clock className="w-3.5 h-3.5" />
                                 <span>{formatDuration(lesson.duration)}</span>
                               </div>
 
                               {/* Video Type / Offline Download Controls */}
                               {vType === "youtube" ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F1EEFF] text-[#635BFF] text-xs font-medium border border-[#E2E8F0]">
                                   <span>Online Video</span>
                                 </span>
                               ) : (lesson.video_url || lesson.video_path) && (
                                 dState?.isDownloading ? (
-                                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-950/60 text-indigo-400 border border-indigo-800 text-xs font-medium">
+                                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F1EEFF] text-[#635BFF] border border-[#635BFF]/30 text-xs font-medium">
                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     <span>Downloading {dState.progress || 0}%</span>
                                   </div>
                                 ) : dState?.isDownloaded ? (
                                   <div className="flex items-center gap-1">
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs font-medium">
-                                      <Check className="w-3.5 h-3.5 text-emerald-400" /> Available Offline
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#ECFDF3] border border-[#22C55E]/30 text-[#22C55E] text-xs font-medium">
+                                      <Check className="w-3.5 h-3.5 text-[#22C55E]" /> Available Offline
                                     </span>
                                     <button
                                       onClick={(e) => handleRemoveDownload(e, lesson)}
                                       title="Remove offline download"
-                                      className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors"
+                                      className="p-1 rounded text-[#64748B] hover:text-red-500 hover:bg-slate-100 transition-colors"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -409,9 +410,9 @@ export default function StudentLearningModules() {
                                     size="sm"
                                     variant="outline"
                                     onClick={(e) => handleDownloadVideo(e, lesson, mod)}
-                                    className="text-slate-300 border-slate-700 hover:bg-slate-800 text-xs gap-1"
+                                    className="text-[#64748B] border-[#E2E8F0] hover:bg-slate-100 text-xs gap-1"
                                   >
-                                    <DownloadCloud className="w-3.5 h-3.5 text-indigo-400" /> Download for Offline
+                                    <DownloadCloud className="w-3.5 h-3.5 text-[#635BFF]" /> Download for Offline
                                   </Button>
                                 )
                               )}
@@ -419,7 +420,7 @@ export default function StudentLearningModules() {
                               <Button
                                 size="sm"
                                 onClick={() => openVideoPlayer(lesson, mod)}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm gap-1.5 text-xs"
+                                className="bg-[#635BFF] hover:bg-[#5148E5] text-white font-medium shadow-xs gap-1.5 text-xs"
                               >
                                 <Play className="w-3.5 h-3.5 fill-current" />
                                 Watch Video
@@ -433,60 +434,60 @@ export default function StudentLearningModules() {
 
                   {/* Module Quiz Section */}
                   {mod.quiz && (
-                    <div className="pt-2 border-t border-slate-700/50 mt-2">
+                    <div className="pt-2 border-t border-[#E2E8F0] mt-2">
                       {mod.quiz.state === "LESSONS_INCOMPLETE" && (
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-amber-900/50 bg-amber-950/30">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-[#F59E0B]/30 bg-[#FFF8E7]">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-amber-900/50 text-amber-300">
+                            <div className="p-2 rounded-lg bg-[#F59E0B]/20 text-[#F59E0B]">
                               <Lock className="w-5 h-5" />
                             </div>
                             <div>
-                              <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                              <h4 className="text-sm font-bold text-[#172033] flex items-center gap-1.5">
                                 🔒 Quiz Locked
                               </h4>
-                              <p className="text-xs text-slate-300">
+                              <p className="text-xs text-[#64748B]">
                                 Complete all required lessons to unlock the quiz.
                               </p>
                             </div>
                           </div>
-                          <Button disabled variant="outline" size="sm" className="opacity-60 cursor-not-allowed text-xs border-amber-800 text-amber-200 shrink-0">
+                          <Button disabled variant="outline" size="sm" className="opacity-60 cursor-not-allowed text-xs border-[#E2E8F0] text-[#64748B] shrink-0">
                             <Lock className="w-3.5 h-3.5 mr-1" /> Locked
                           </Button>
                         </div>
                       )}
 
                       {mod.quiz.state === "NOT_RELEASED" && (
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-700 bg-slate-800/60">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-[#E2E8F0] bg-slate-50">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-slate-700 text-slate-300">
+                            <div className="p-2 rounded-lg bg-slate-200 text-[#64748B]">
                               <Lock className="w-5 h-5" />
                             </div>
                             <div>
-                              <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                              <h4 className="text-sm font-bold text-[#172033] flex items-center gap-1.5">
                                 🔒 Quiz Locked
                               </h4>
-                              <p className="text-xs text-slate-300">
+                              <p className="text-xs text-[#64748B]">
                                 Your teacher has not released the quiz yet.
                               </p>
                             </div>
                           </div>
-                          <Button disabled variant="outline" size="sm" className="opacity-60 cursor-not-allowed text-xs border-slate-700 text-slate-300 shrink-0">
+                          <Button disabled variant="outline" size="sm" className="opacity-60 cursor-not-allowed text-xs border-[#E2E8F0] text-[#64748B] shrink-0">
                             <Lock className="w-3.5 h-3.5 mr-1" /> Pending Release
                           </Button>
                         </div>
                       )}
 
                       {mod.quiz.state === "UNLOCKED" && (
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-emerald-900/50 bg-emerald-950/30">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-[#22C55E]/30 bg-[#ECFDF3]">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-emerald-900/50 text-emerald-300">
-                              <Unlock className="w-5 h-5 text-emerald-400" />
+                            <div className="p-2 rounded-lg bg-[#22C55E]/20 text-[#22C55E]">
+                              <Unlock className="w-5 h-5 text-[#22C55E]" />
                             </div>
                             <div>
-                              <h4 className="text-sm font-bold text-emerald-200 flex items-center gap-1.5">
+                              <h4 className="text-sm font-bold text-[#172033] flex items-center gap-1.5">
                                 🔓 Quiz Unlocked
                               </h4>
-                              <p className="text-xs text-emerald-300">
+                              <p className="text-xs text-[#64748B]">
                                 {mod.quiz.title || "Module Quiz"} is ready for you!
                               </p>
                             </div>
@@ -494,7 +495,7 @@ export default function StudentLearningModules() {
                           <Button
                             size="sm"
                             onClick={() => router.push(`/student/quiz?id=${mod.quiz.id}`)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm text-xs gap-1.5 shrink-0"
+                            className="bg-[#22C55E] hover:bg-emerald-600 text-white font-semibold shadow-xs text-xs gap-1.5 shrink-0"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                             Start Quiz
@@ -512,99 +513,15 @@ export default function StudentLearningModules() {
 
       {/* Video Player Modal */}
       {activeVideoLesson && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden text-white space-y-0">
-            {/* Modal Header */}
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
-              <div className="space-y-0.5 min-w-0 pr-4">
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-indigo-600 text-white text-[10px]">
-                    {activeVideoModule?.title || "Module"}
-                  </Badge>
-                  <span className="text-xs text-slate-400">
-                    Lesson {activeVideoLesson.order_index}
-                  </span>
-                  {downloadStates[activeVideoLesson.id]?.isDownloaded && (
-                    <Badge className="bg-emerald-600 text-white text-[10px] flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Offline Ready
-                    </Badge>
-                  )}
-                  {getVideoType(activeVideoLesson) === "youtube" && (
-                    <Badge className="bg-slate-700 text-slate-300 text-[10px]">
-                      YouTube Stream
-                    </Badge>
-                  )}
-                </div>
-                <h3 className="text-lg font-bold text-white truncate">
-                  {activeVideoLesson.title}
-                </h3>
-              </div>
-              <button
-                onClick={closeVideoPlayer}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Video Player Area */}
-            <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
-              {activeVideoLesson.video_url || activeVideoLesson.video_path ? (
-                getVideoType(activeVideoLesson) === "youtube" ? (
-                  <iframe
-                    src={getYouTubeEmbedUrl(activeVideoLesson.video_url)}
-                    title={activeVideoLesson.title}
-                    className="w-full h-full border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : (
-                  <video
-                    src={offlineBlobUrl || activeVideoLesson.video_url}
-                    controls
-                    autoPlay
-                    className="w-full h-full object-contain"
-                  />
-                )
-              ) : (
-                <div className="p-8 text-center text-slate-400 space-y-2">
-                  <Video className="w-12 h-12 mx-auto text-slate-600" />
-                  <p>Video content is currently processing or unavailable.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer Controls */}
-            <div className="p-4 bg-slate-900/90 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="text-sm text-slate-300">
-                {activeVideoLesson.description || "Watch this lesson to complete your module requirements."}
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <Button
-                  onClick={(e) =>
-                    handleToggleCompletion(e, activeVideoLesson, activeVideoModule)
-                  }
-                  disabled={updatingLessonId === activeVideoLesson.id}
-                  className={
-                    activeVideoLesson.progress?.completed
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
-                      : "bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
-                  }
-                >
-                  {updatingLessonId === activeVideoLesson.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
-                  ) : activeVideoLesson.progress?.completed ? (
-                    <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                  ) : (
-                    <Circle className="w-4 h-4 mr-1.5" />
-                  )}
-                  {activeVideoLesson.progress?.completed ? "Completed" : "Mark as Complete"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <VideoPlayer
+          lesson={activeVideoLesson}
+          module={activeVideoModule}
+          offlineBlobUrl={offlineBlobUrl}
+          onClose={closeVideoPlayer}
+          onComplete={(e) => handleToggleCompletion(e, activeVideoLesson, activeVideoModule)}
+          updatingLessonId={updatingLessonId}
+          downloadState={downloadStates[activeVideoLesson.id]}
+        />
       )}
     </div>
   );

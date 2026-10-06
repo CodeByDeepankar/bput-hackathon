@@ -13,12 +13,20 @@
  * - https://www.youtube.com/embed/VIDEO_ID
  * - https://www.youtube-nocookie.com/embed/VIDEO_ID
  */
-export function parseYouTubeVideoId(url) {
+export function getYouTubeVideoId(url) {
   if (!url || typeof url !== 'string') return null;
   const trimmed = url.trim();
   const regExp = /^.*(?:youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|&v=)([^#&?]*).*/i;
   const match = trimmed.match(regExp);
   return (match && match[1] && match[1].length === 11) ? match[1] : null;
+}
+
+export function parseYouTubeVideoId(url) {
+  return getYouTubeVideoId(url);
+}
+
+export function isYouTubeUrl(url) {
+  return getYouTubeVideoId(url) !== null;
 }
 
 /**
@@ -32,30 +40,38 @@ export function getYouTubeEmbedUrl(url) {
 }
 
 /**
- * Determines whether a lesson video is a YouTube video or an uploaded video file.
- * Returns 'youtube' | 'uploaded'.
+ * Determines whether a lesson video is youtube, hls, mp4, or unknown.
+ * Accepts either a URL string or a lesson object.
+ * Returns 'youtube' | 'hls' | 'mp4' | 'unknown'.
  */
-export function getVideoType(lesson) {
-  if (!lesson) return 'uploaded';
-  
-  if (lesson.video_type === 'youtube' || lesson.videoType === 'youtube') {
+export function getVideoType(input) {
+  if (!input) return 'unknown';
+
+  let url = '';
+  if (typeof input === 'string') {
+    url = input;
+  } else if (typeof input === 'object') {
+    if (input.video_type === 'youtube' || input.videoType === 'youtube') {
+      return 'youtube';
+    }
+    url = input.video_url || input.videoUrl || input.video_path || input.videoPath || '';
+  }
+
+  if (!url || typeof url !== 'string') return 'unknown';
+
+  if (parseYouTubeVideoId(url)) {
     return 'youtube';
   }
-  if (lesson.video_type === 'uploaded' || lesson.videoType === 'uploaded') {
-    return 'uploaded';
+
+  const lowerUrl = url.toLowerCase();
+
+  if (lowerUrl.includes('.m3u8')) {
+    return 'hls';
   }
 
-  // Auto-detect based on video_url / video_path
-  const url = String(lesson.video_url || '').toLowerCase();
-  const path = String(lesson.video_path || '').toLowerCase();
-
-  if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('youtube-nocookie.com')) {
-    return 'youtube';
+  if (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov') || lowerUrl.includes('supabase.co/storage')) {
+    return 'mp4';
   }
 
-  if (path || url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov') || url.includes('supabase.co/storage')) {
-    return 'uploaded';
-  }
-
-  return 'uploaded';
+  return 'unknown';
 }

@@ -824,6 +824,8 @@ export function useTeacherStudentProgress(options = {}) {
 
   useEffect(() => {
     fetchReports();
+    const intervalId = setInterval(fetchReports, 10000);
+    return () => clearInterval(intervalId);
   }, [fetchReports]);
 
   return {

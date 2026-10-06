@@ -28,7 +28,7 @@ export default function RoleSelectPage() {
   const canContinue = useMemo(() => !!role, [role]);
   const canSubmit = useMemo(() => {
     if (!name.trim()) return false;
-    if (role === "student") return !!selectedClass && !!schoolName.trim();
+    if (role === "student") return !!selectedClass;
     return true;
   }, [name, selectedClass, schoolName, role]);
 
@@ -133,7 +133,7 @@ export default function RoleSelectPage() {
                     </select>
                   </div>
                   <div>
-                    <label className={styles.formLabel}>School Name / School ID<span className={styles.requiredStar}>*</span></label>
+                    <label className={styles.formLabel}>School Name / School ID</label>
                     <input
                       className={styles.input}
                       value={schoolName}
