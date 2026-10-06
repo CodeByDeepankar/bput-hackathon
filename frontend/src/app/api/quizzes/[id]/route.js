@@ -1,6 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { supabase, run, runSingle, nowIso } from "../../_utils/supabase";
+import { canStudentAccessQuiz } from "../../_utils/quiz";
 
 export const runtime = "nodejs";
 
@@ -12,7 +13,7 @@ export async function GET(request, context) {
     const quiz = await runSingle(
       supabase
         .from("quizzes")
-        .select("id, subject_id, module_id, title, description, difficulty, time_limit, created_by, school_id, is_bank, is_published, created_at, updated_at")
+        .select("id, subject_id, module_id, title, description, difficulty, time_limit, created_by, school_id, is_bank, is_published, created_at, updated_at, learning_modules(id, class, title, published), subjects(id, name)")
         .eq("id", id)
         .maybeSingle()
     );
@@ -21,65 +22,63 @@ export async function GET(request, context) {
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
     }
 
-    // Check module unlock conditions if quiz is linked to a module
-    if (quiz.module_id) {
-      const authObj = await auth();
-      const userId = authObj?.userId;
+    const authObj = await auth();
+    const userId = authObj?.userId;
 
-      // Check role
-      let isStudent = false;
-      if (userId) {
-        try {
-          const roleDoc = await runSingle(
-            supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle()
-          );
-          if (roleDoc?.role === "student") {
-            isStudent = true;
-          }
-        } catch (e) {
-          console.warn("[/api/quizzes/[id]] role check error:", e.message);
-        }
-      }
-
-      if (isStudent) {
-        // 1. Check teacher release status
-        if (!quiz.is_published) {
-          return NextResponse.json(
-            { error: "Quiz is locked. Your teacher has not released the quiz yet." },
-            { status: 403 }
-          );
-        }
-
-        // 2. Fetch required lessons for this module
-        const requiredLessons = await run(
-          supabase
-            .from("lessons")
-            .select("id")
-            .eq("module_id", quiz.module_id)
-            .eq("is_required", true)
-            .eq("published", true)
+    let userRole = null;
+    if (userId) {
+      try {
+        userRole = await runSingle(
+          supabase.from("user_roles").select("user_id, role, class, school_id, name").eq("user_id", userId).maybeSingle()
         );
-
-        if (Array.isArray(requiredLessons) && requiredLessons.length > 0) {
-          const reqLessonIds = requiredLessons.map((l) => l.id);
-          const completedProgress = await run(
-            supabase
-              .from("lesson_progress")
-              .select("lesson_id")
-              .eq("student_id", userId)
-              .eq("completed", true)
-              .in("lesson_id", reqLessonIds)
-          );
-
-          const completedCount = Array.isArray(completedProgress) ? completedProgress.length : 0;
-          if (completedCount < reqLessonIds.length) {
-            return NextResponse.json(
-              { error: "Quiz is locked. Complete all required lessons to unlock the quiz." },
-              { status: 403 }
-            );
-          }
-        }
+      } catch (e) {
+        console.warn("[/api/quizzes/[id]] user_roles lookup error:", e.message);
       }
+
+      if (userRole && !userRole.class) {
+        try {
+          const clerkUser = await currentUser();
+          if (clerkUser?.unsafeMetadata?.class) {
+            userRole.class = clerkUser.unsafeMetadata.class;
+          }
+        } catch {}
+      }
+    }
+
+    const isStudent = userRole?.role === "student" || (!userRole?.role || userRole.role === "unassigned");
+    const isTeacher = userRole?.role === "teacher" || userRole?.role === "admin";
+
+    // Enforce server-side security check for students
+    if (!isTeacher && userId) {
+      const access = await canStudentAccessQuiz({
+        studentId: userId,
+        quizId: id,
+        userRoleDoc: userRole,
+      });
+
+      if (!access.allowed) {
+        return NextResponse.json(
+          {
+            allowed: false,
+            error: access.error,
+            reason: access.reason,
+            completedLessons: access.completedLessons ?? 0,
+            totalLessons: access.totalLessons ?? 0,
+            progress: access.progress ?? 0,
+            quiz: access.quiz ?? {
+              id: quiz.id,
+              title: quiz.title,
+              description: quiz.description,
+              quizClass: quiz.learning_modules?.class || null,
+              moduleTitle: quiz.learning_modules?.title || null,
+              subjectName: quiz.subjects?.name || null,
+            },
+          },
+          { status: 403 }
+        );
+      }
+    } else if (!isTeacher && !userId) {
+      return NextResponse.json({ error: "Unauthorized: Sign in required" }, { status: 401 });
     }
 
     const questions = await run(
@@ -93,7 +92,10 @@ export async function GET(request, context) {
     return NextResponse.json({
       id: quiz.id,
       subjectId: quiz.subject_id,
+      subjectName: quiz.subjects?.name || null,
       moduleId: quiz.module_id,
+      moduleTitle: quiz.learning_modules?.title || null,
+      className: quiz.learning_modules?.class || null,
       title: quiz.title,
       description: quiz.description,
       difficulty: quiz.difficulty,

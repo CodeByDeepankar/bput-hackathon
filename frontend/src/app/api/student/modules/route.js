@@ -267,20 +267,20 @@ export async function GET(request) {
       let quizObject = null;
 
       if (moduleQuiz) {
-        const requiredLessons = modLessons.filter((l) => l.is_required);
-        const reqCompleted =
-          requiredLessons.length > 0
-            ? requiredLessons.every((l) => l.progress.completed)
-            : totalLessons > 0 && completedLessons === totalLessons;
+        const isModuleComplete = totalLessons > 0 && completedLessons === totalLessons;
 
         let state = "UNLOCKED";
         let unlocked = true;
         let message = null;
 
-        if (!reqCompleted) {
+        if (totalLessons === 0) {
+          state = "NO_LESSONS";
+          unlocked = false;
+          message = "No lessons published for this module yet.";
+        } else if (!isModuleComplete) {
           state = "LESSONS_INCOMPLETE";
           unlocked = false;
-          message = "Complete all required lessons to unlock the quiz.";
+          message = `Complete all ${totalLessons} lessons to unlock the quiz.`;
         } else if (!moduleQuiz.is_published) {
           state = "NOT_RELEASED";
           unlocked = false;

@@ -1,7 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { supabase, run, nowIso, runSingle } from "../_utils/supabase";
-import { recordQuizCompletionInternal, calculateStreak } from "../_utils/quiz";
+import { recordQuizCompletionInternal, calculateStreak, canStudentAccessQuiz } from "../_utils/quiz";
 
 export const runtime = "nodejs";
 
@@ -29,6 +29,15 @@ export async function POST(request) {
       console.warn("[/api/quiz-completion] user_roles lookup error:", e.message);
     }
 
+    if (roleDoc && !roleDoc.class) {
+      try {
+        const clerkUser = await currentUser();
+        if (clerkUser?.unsafeMetadata?.class) {
+          roleDoc.class = clerkUser.unsafeMetadata.class;
+        }
+      } catch {}
+    }
+
     const {
       quizId,
       score,
@@ -41,6 +50,22 @@ export async function POST(request) {
 
     if (!quizId) {
       return NextResponse.json({ error: "quizId is required" }, { status: 400 });
+    }
+
+    // Verify student quiz access eligibility for real curriculum quizzes
+    if (quizId && !quizId.startsWith("practice:") && !quizId.startsWith("generic-math-quiz:")) {
+      const access = await canStudentAccessQuiz({
+        studentId: authenticatedUserId,
+        quizId,
+        userRoleDoc: roleDoc,
+      });
+
+      if (!access.allowed) {
+        return NextResponse.json(
+          { error: `Quiz submission rejected: ${access.error}`, reason: access.reason },
+          { status: 403 }
+        );
+      }
     }
 
     // Always record completion under the authenticated Clerk user ID

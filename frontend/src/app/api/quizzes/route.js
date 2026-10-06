@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import {
   supabase,
@@ -10,6 +10,7 @@ import {
   ensureTeacher,
 } from "../_utils/supabase";
 import { broadcast } from "../_utils/events";
+import { normalizeClass } from "../_utils/quiz";
 
 export const runtime = "nodejs";
 
@@ -17,43 +18,162 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const subjectId = searchParams.get("subjectId");
+    const moduleId = searchParams.get("moduleId");
     const createdBy = searchParams.get("createdBy");
+    const classParam = searchParams.get("class");
     
     const authObj = await auth();
-    let schoolId = searchParams.get("schoolId");
+    const userId = authObj?.userId;
+    let userRole = null;
 
-    // Server-side auth verification for student isolation
-    if (authObj?.userId) {
+    if (userId) {
       try {
-        const userRole = await runSingle(
-          supabase.from("user_roles").select("school_id, class, role").eq("user_id", authObj.userId).maybeSingle()
+        userRole = await runSingle(
+          supabase.from("user_roles").select("user_id, school_id, class, role").eq("user_id", userId).maybeSingle()
         );
-        if (userRole?.school_id && userRole.role === "student") {
-          schoolId = userRole.school_id;
-        }
       } catch (e) {
         console.warn("[/api/quizzes] user_roles lookup error:", e.message);
       }
     }
 
+    const isStudent = userRole?.role === "student";
+    let studentClass = userRole?.class || classParam || null;
+
+    if (userId && !studentClass) {
+      try {
+        const clerkUser = await currentUser();
+        studentClass = clerkUser?.unsafeMetadata?.class || clerkUser?.publicMetadata?.class || null;
+        if (studentClass && userRole) userRole.class = studentClass;
+      } catch {}
+    }
+
     let query = supabase
       .from("quizzes")
       .select(
-        "id, subject_id, module_id, title, description, difficulty, time_limit, created_by, school_id, is_bank, is_published, created_at, updated_at"
+        "id, subject_id, module_id, title, description, difficulty, time_limit, created_by, school_id, is_bank, is_published, created_at, updated_at, learning_modules(id, class, title, published), subjects(id, name)"
       )
       .order("created_at", { ascending: false });
 
+    // Students only ever see published quizzes
+    if (isStudent) {
+      query = query.eq("is_published", true);
+    }
+
     if (subjectId) query = query.eq("subject_id", subjectId);
+    if (moduleId) query = query.eq("module_id", moduleId);
     if (createdBy) query = query.eq("created_by", createdBy);
-    if (schoolId) query = query.eq("school_id", schoolId);
+    // NOTE: school_id filter is NOT applied for student quiz access; quizzes are class-based.
 
-    const quizzes = await run(query);
+    const rawQuizzes = await run(query);
+    const list = Array.isArray(rawQuizzes) ? rawQuizzes : [];
 
+    // Filter by class if student or if classParam provided
+    const targetClass = isStudent ? studentClass : (classParam || null);
+    const filteredQuizzes = targetClass
+      ? list.filter((quiz) => {
+          const quizClass = quiz.learning_modules?.class || null;
+          return normalizeClass(quizClass) === normalizeClass(targetClass);
+        })
+      : list;
+
+    // For students, enrich each quiz with module lesson completion data
+    if (isStudent && userId) {
+      const moduleIds = Array.from(new Set(filteredQuizzes.map((q) => q.module_id).filter(Boolean)));
+      
+      let lessonsByModule = {};
+      let allLessonIds = [];
+      if (moduleIds.length > 0) {
+        const activeLessons = await run(
+          supabase
+            .from("lessons")
+            .select("id, module_id")
+            .in("module_id", moduleIds)
+            .or("published.eq.true,published.is.null")
+        );
+        if (Array.isArray(activeLessons)) {
+          activeLessons.forEach((l) => {
+            allLessonIds.push(l.id);
+            if (!lessonsByModule[l.module_id]) lessonsByModule[l.module_id] = [];
+            lessonsByModule[l.module_id].push(l.id);
+          });
+        }
+      }
+
+      let completedSet = new Set();
+      if (allLessonIds.length > 0) {
+        const completions = await run(
+          supabase
+            .from("lesson_progress")
+            .select("lesson_id")
+            .eq("student_id", userId)
+            .eq("completed", true)
+            .in("lesson_id", allLessonIds)
+        );
+        if (Array.isArray(completions)) {
+          completions.forEach((c) => completedSet.add(c.lesson_id));
+        }
+      }
+
+      const enriched = filteredQuizzes.map((quiz) => {
+        const modId = quiz.module_id;
+        const modLessonIds = modId && lessonsByModule[modId] ? lessonsByModule[modId] : [];
+        const totalLessons = modLessonIds.length;
+        const completedLessons = modLessonIds.filter((id) => completedSet.has(id)).length;
+        const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+        const isUnlocked = totalLessons > 0 && completedLessons === totalLessons;
+
+        let state = "UNLOCKED";
+        let message = null;
+        if (totalLessons === 0) {
+          state = "NO_LESSONS";
+          message = "No lessons published for this module yet.";
+        } else if (!isUnlocked) {
+          state = "LESSONS_INCOMPLETE";
+          message = `Complete all ${totalLessons} lessons to unlock the quiz.`;
+        }
+
+        return {
+          id: quiz.id,
+          subjectId: quiz.subject_id,
+          subjectName: quiz.subjects?.name || null,
+          moduleId: quiz.module_id,
+          moduleTitle: quiz.learning_modules?.title || null,
+          className: quiz.learning_modules?.class || null,
+          title: quiz.title,
+          description: quiz.description,
+          difficulty: quiz.difficulty,
+          timeLimit: quiz.time_limit,
+          createdBy: quiz.created_by,
+          schoolId: quiz.school_id,
+          isBank: quiz.is_bank,
+          isPublished: Boolean(quiz.is_published),
+          createdAt: quiz.created_at,
+          updatedAt: quiz.updated_at,
+          // Progress & unlock status for student
+          isUnlocked,
+          unlocked: isUnlocked,
+          state,
+          message,
+          totalLessons,
+          completedLessons,
+          progress,
+        };
+      });
+
+      return NextResponse.json(enriched, {
+        headers: { "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0" },
+      });
+    }
+
+    // Default response (teachers/admin)
     return NextResponse.json(
-      quizzes.map((quiz) => ({
+      filteredQuizzes.map((quiz) => ({
         id: quiz.id,
         subjectId: quiz.subject_id,
+        subjectName: quiz.subjects?.name || null,
         moduleId: quiz.module_id,
+        moduleTitle: quiz.learning_modules?.title || null,
+        className: quiz.learning_modules?.class || null,
         title: quiz.title,
         description: quiz.description,
         difficulty: quiz.difficulty,

@@ -89,13 +89,13 @@ export function useQuizzes(filters = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { subjectId, createdBy, schoolId } = filters;
+  const { subjectId, moduleId, createdBy, schoolId, class: classFilter } = filters;
 
   const fetchQuizzes = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiClient.getQuizzes({ subjectId, createdBy, schoolId });
+      const data = await apiClient.getQuizzes({ subjectId, moduleId, createdBy, schoolId, class: classFilter });
       setQuizzes(data);
     } catch (err) {
       console.error('Failed to fetch quizzes:', err);
@@ -105,7 +105,7 @@ export function useQuizzes(filters = {}) {
     } finally {
       setLoading(false);
     }
-  }, [subjectId, createdBy, schoolId]);
+  }, [subjectId, moduleId, createdBy, schoolId, classFilter]);
 
   useEffect(() => {
     fetchQuizzes();

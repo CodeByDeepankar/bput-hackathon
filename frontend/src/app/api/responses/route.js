@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase, run, runSingle, normalizeId, nowIso } from "../_utils/supabase";
-import { recordQuizCompletionInternal } from "../_utils/quiz";
+import { recordQuizCompletionInternal, canStudentAccessQuiz } from "../_utils/quiz";
 import { broadcast } from "../_utils/events";
 
 export const runtime = "nodejs";
@@ -17,6 +17,21 @@ export async function POST(request) {
     );
     if (!quiz) {
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
+    }
+
+    // Verify student quiz access eligibility for real curriculum quizzes
+    if (quizId && !quizId.startsWith("practice:") && !quizId.startsWith("generic-math-quiz:")) {
+      const access = await canStudentAccessQuiz({
+        studentId,
+        quizId,
+      });
+
+      if (!access.allowed) {
+        return NextResponse.json(
+          { error: `Quiz submission rejected: ${access.error}`, reason: access.reason },
+          { status: 403 }
+        );
+      }
     }
 
     const questions = await run(

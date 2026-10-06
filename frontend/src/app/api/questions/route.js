@@ -1,3 +1,4 @@
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import {
   supabase,
@@ -7,6 +8,7 @@ import {
   requireUserRole,
   ensureTeacher,
 } from "../_utils/supabase";
+import { canStudentAccessQuiz } from "../_utils/quiz";
 
 export const runtime = "nodejs";
 
@@ -27,11 +29,54 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const quizId = searchParams.get("quizId");
     const schoolId = searchParams.get("schoolId");
-    const includeAnswers = String(searchParams.get("includeAnswers") || "true").toLowerCase() === "true";
+    let includeAnswers = String(searchParams.get("includeAnswers") || "true").toLowerCase() === "true";
     const limitParam = searchParams.get("limit");
 
     if (!quizId && !schoolId) {
       return NextResponse.json({ error: "quizId or schoolId is required" }, { status: 400 });
+    }
+
+    // Verify caller role and access if quizId is requested
+    const authObj = await auth();
+    const userId = authObj?.userId;
+    if (userId && quizId) {
+      let roleDoc = null;
+      try {
+        roleDoc = await runSingle(
+          supabase.from("user_roles").select("role, class").eq("user_id", userId).maybeSingle()
+        );
+      } catch (e) {
+        console.warn("[/api/questions] user_roles lookup error:", e.message);
+      }
+
+      if (roleDoc && !roleDoc.class) {
+        try {
+          const clerkUser = await currentUser();
+          if (clerkUser?.unsafeMetadata?.class) {
+            roleDoc.class = clerkUser.unsafeMetadata.class;
+          }
+        } catch {}
+      }
+
+      const isStudent = roleDoc?.role === "student" || (!roleDoc?.role || roleDoc.role === "unassigned");
+      if (isStudent) {
+        // Enforce quiz access
+        const access = await canStudentAccessQuiz({
+          studentId: userId,
+          quizId,
+          userRoleDoc: roleDoc,
+        });
+
+        if (!access.allowed) {
+          return NextResponse.json(
+            { error: access.error || "Quiz is locked.", reason: access.reason },
+            { status: 403 }
+          );
+        }
+
+        // Students can NEVER view correct answers before submission
+        includeAnswers = false;
+      }
     }
 
     let query = supabase

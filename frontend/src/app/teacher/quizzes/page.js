@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/nextjs";
 import { fetchUserRole } from "@/lib/users";
 import { useSubjects, useQuizzes, useQuizQuestions, useTeacherModules } from "@/hooks/useApi";
-import { BRANCH_SUBJECTS, getSubjectsForBranch, formatBranchName } from "@/student/data/branchSubjects";
+import { getQuizResults } from "@/lib/api";
+import { normalizeClass } from "@/app/api/_utils/quiz";
 import { Card, CardContent, CardHeader, CardTitle } from "@teacher/components/ui/card";
 import { Input } from "@teacher/components/ui/input";
 import { Textarea } from "@teacher/components/ui/textarea";
@@ -11,7 +12,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@teacher/components/ui/button";
 import { Badge } from "@teacher/components/ui/badge";
 import { Separator } from "@teacher/components/ui/separator";
-import { Loader2, PlusCircle, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import {
+  Loader2,
+  PlusCircle,
+  Pencil,
+  Trash2,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  BookOpen,
+  Award,
+  Users,
+  CheckCircle2,
+  X,
+  FileQuestion,
+  HelpCircle,
+  Clock,
+} from "lucide-react";
+
+const SCHOOL_CLASSES = Array.from({ length: 12 }, (_, i) => `Class ${i + 1}`);
 
 const difficultyOptions = [
   { value: "easy", label: "Easy" },
@@ -19,12 +38,14 @@ const difficultyOptions = [
   { value: "hard", label: "Hard" },
 ];
 
-const selectTriggerClass = "bg-slate-50 border border-slate-200 focus:border-violet-300 focus:ring-2 focus:ring-violet-100 text-slate-800";
-const selectContentClass = "bg-white border border-slate-200 shadow-lg";
+const selectTriggerClass =
+  "bg-white border border-slate-200 focus:border-[#635BFF] focus:ring-2 focus:ring-[#635BFF]/20 text-slate-800 rounded-lg";
+const selectContentClass = "bg-white border border-slate-200 shadow-lg rounded-lg";
 
 const createDefaultQuizForm = () => ({
   title: "",
-  subjectOption: "",
+  targetClass: "Class 5",
+  subjectId: "",
   moduleId: "none",
   difficulty: "medium",
   timeLimit: 300,
@@ -43,78 +64,29 @@ const createDefaultQuestionForm = () => ({
   subTopic: "",
 });
 
-function parseClassValue(value) {
-  if (!value) return null;
-  const match = String(value).match(/^([A-Za-z]+)[-_\s]*Sem(?:ester)?\s*(\d{1,2})$/i);
-  if (!match) return null;
-  const branchKey = match[1].toUpperCase();
-  const semesterNumber = Number(match[2]);
-  if (!Number.isFinite(semesterNumber)) return null;
-  return {
-    branchKey,
-    semester: semesterNumber,
-  };
-}
-
 function QuizManager() {
   const { user, isLoaded, isSignedIn } = useUser();
   const [roleDoc, setRoleDoc] = useState(null);
   const [roleError, setRoleError] = useState(null);
   const [roleLoading, setRoleLoading] = useState(true);
+
   const [quizForm, setQuizForm] = useState(() => createDefaultQuizForm());
   const [quizSubmitting, setQuizSubmitting] = useState(false);
   const [quizMessage, setQuizMessage] = useState(null);
   const [quizError, setQuizError] = useState(null);
   const [selectedQuizId, setSelectedQuizId] = useState(null);
 
+  // Results viewing modal state
+  const [viewingResultsQuiz, setViewingResultsQuiz] = useState(null);
+  const [resultsList, setResultsList] = useState([]);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [resultsError, setResultsError] = useState(null);
+
   const [questionForm, setQuestionForm] = useState(() => createDefaultQuestionForm());
   const [questionSubmitting, setQuestionSubmitting] = useState(false);
   const [questionMessage, setQuestionMessage] = useState(null);
   const [questionError, setQuestionError] = useState(null);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
-  const [branchSelection, setBranchSelection] = useState("CSE");
-  const [semesterSelection, setSemesterSelection] = useState("1");
-
-  const branchOptions = useMemo(() => {
-    const base = Object.keys(BRANCH_SUBJECTS).map((key) => ({
-      value: key,
-      label: formatBranchName(key),
-    }));
-
-    if (branchSelection && !base.some((option) => option.value.toUpperCase() === branchSelection.toUpperCase())) {
-      base.push({ value: branchSelection, label: formatBranchName(branchSelection) });
-    }
-
-    return base.sort((a, b) => a.label.localeCompare(b.label));
-  }, [branchSelection]);
-
-  const semesterOptions = useMemo(
-    () => Array.from({ length: 8 }, (_, index) => ({
-      value: String(index + 1),
-      label: `Semester ${index + 1}`,
-    })),
-    []
-  );
-
-  const branchKey = useMemo(
-    () => String(branchSelection || "CSE").toUpperCase(),
-    [branchSelection]
-  );
-
-  const branchDisplay = useMemo(
-    () => formatBranchName(branchSelection || "CSE"),
-    [branchSelection]
-  );
-
-  const semesterNumber = useMemo(() => {
-    const parsed = Number(semesterSelection);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-  }, [semesterSelection]);
-
-  const classLabel = useMemo(
-    () => `${branchDisplay}-Sem${semesterNumber}`,
-    [branchDisplay, semesterNumber]
-  );
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -148,118 +120,65 @@ function QuizManager() {
   const schoolId = roleDoc?.schoolId || roleDoc?.school_id || null;
   const role = typeof roleDoc === "string" ? roleDoc : roleDoc?.role;
 
-  useEffect(() => {
-    if (!roleDoc?.class) return;
-    const parsed = parseClassValue(roleDoc.class);
-    if (parsed?.branchKey) {
-      setBranchSelection(parsed.branchKey);
-    }
-    if (parsed?.semester) {
-      setSemesterSelection(String(parsed.semester));
-    }
-  }, [roleDoc?.class]);
-
+  // Fetch subjects dynamically from system
   const {
     subjects,
     loading: subjectsLoading,
     error: subjectsError,
     fetchSubjects: refreshSubjects,
-    createSubject: createSubjectRecord,
-  } = useSubjects(
-    schoolId
-      ? { schoolId, enabled: true }
-      : { enabled: false }
-  );
+  } = useSubjects({ enabled: true });
 
-  const {
-    subjectOptions,
-    fallbackSubjectMeta,
-    usingFallbackSubjects,
-  } = useMemo(() => {
-    if (!Array.isArray(subjects) || !subjects.length) {
-      const fallbackList = getSubjectsForBranch(branchKey, semesterNumber) || [];
-      const fallbackMeta = new Map();
-      const fallbackOptions = fallbackList.map((item) => {
-        const value = `new::${branchKey}::${semesterNumber}::${item.name}`;
-        fallbackMeta.set(value, { name: item.name, summary: item.summary || "" });
-        return {
-          value,
-          label: item.name,
-          isExisting: false,
-        };
-      });
-      fallbackOptions.sort((a, b) => a.label.localeCompare(b.label));
-      return {
-        subjectOptions: fallbackOptions,
-        fallbackSubjectMeta: fallbackMeta,
-        usingFallbackSubjects: fallbackOptions.length > 0,
-      };
-    }
+  // Fetch modules from teacher modules
+  const { modules: teacherModules, loading: modulesLoading } = useTeacherModules();
 
-    const scopedSubjects = subjects.filter((subject) => subject.class === classLabel);
-    const existingNames = new Set(scopedSubjects.map((subject) => subject.name));
-    const options = scopedSubjects.map((subject) => ({
-      value: subject.id,
-      label: subject.name,
-      isExisting: true,
-    }));
-
-    const fallbackMeta = new Map();
-    const fallbackList = getSubjectsForBranch(branchKey, semesterNumber) || [];
-    fallbackList.forEach((item) => {
-      if (existingNames.has(item.name)) return;
-      const value = `new::${branchKey}::${semesterNumber}::${item.name}`;
-      fallbackMeta.set(value, { name: item.name, summary: item.summary || "" });
-      options.push({
-        value,
-        label: item.name,
-        isExisting: false,
-      });
-    });
-
-    options.sort((a, b) => a.label.localeCompare(b.label));
-
-    return {
-      subjectOptions: options,
-      fallbackSubjectMeta: fallbackMeta,
-      usingFallbackSubjects: options.some((option) => !option.isExisting),
-    };
-  }, [subjects, branchKey, semesterNumber, classLabel]);
-
-  const subjectsById = useMemo(() => {
-    const map = new Map();
-    subjects.forEach((subject) => {
-      map.set(subject.id, subject.name);
-    });
-    return map;
-  }, [subjects]);
-
-  useEffect(() => {
-    setQuizForm((prev) => ({ ...prev, subjectOption: "" }));
-  }, [branchKey, semesterNumber]);
-
+  // Quizzes for teacher (by createdBy)
   const {
     quizzes,
     loading: quizzesLoading,
     error: quizzesError,
     fetchQuizzes,
     createQuiz,
-  } = useQuizzes({ schoolId, createdBy: user?.id });
+  } = useQuizzes({ createdBy: user?.id });
 
-  const { modules: teacherModules } = useTeacherModules();
+  // Filter modules matching current target class
+  const classModules = useMemo(() => {
+    if (!Array.isArray(teacherModules)) return [];
+    const targetNorm = normalizeClass(quizForm.targetClass);
+    return teacherModules.filter((m) => {
+      const modNorm = normalizeClass(m.class);
+      return !modNorm || modNorm === targetNorm;
+    });
+  }, [teacherModules, quizForm.targetClass]);
+
+  // Modules matching target class AND selected subject (or all class modules as fallback)
+  const availableModules = useMemo(() => {
+    if (!quizForm.subjectId) return classModules;
+    const matchingSubject = classModules.filter(
+      (m) => m.subject_id === quizForm.subjectId || m.subjectId === quizForm.subjectId
+    );
+    return matchingSubject.length > 0 ? matchingSubject : classModules;
+  }, [classModules, quizForm.subjectId]);
+
+  const subjectsById = useMemo(() => {
+    const map = new Map();
+    (subjects || []).forEach((subject) => {
+      map.set(subject.id, subject.name);
+    });
+    return map;
+  }, [subjects]);
+
+  const modulesById = useMemo(() => {
+    const map = new Map();
+    (teacherModules || []).forEach((m) => {
+      map.set(m.id, m);
+    });
+    return map;
+  }, [teacherModules]);
 
   const selectedQuiz = useMemo(
     () => quizzes.find((quiz) => quiz.id === selectedQuizId) || null,
     [quizzes, selectedQuizId]
   );
-
-  const modulesById = useMemo(() => {
-    const map = new Map();
-    (teacherModules || []).forEach((m) => {
-      map.set(m.id, m.title);
-    });
-    return map;
-  }, [teacherModules]);
 
   const {
     questions,
@@ -277,17 +196,31 @@ function QuizManager() {
   }, [quizzes, selectedQuizId]);
 
   const handleQuizFieldChange = (field, value) => {
-    setQuizForm((prev) => ({ ...prev, [field]: value }));
+    setQuizForm((prev) => {
+      const next = { ...prev, [field]: value };
+      // Reset module if class changes and module doesn't match
+      if (field === "targetClass" && prev.moduleId !== "none") {
+        const currentMod = modulesById.get(prev.moduleId);
+        if (currentMod && normalizeClass(currentMod.class) !== normalizeClass(value)) {
+          next.moduleId = "none";
+        }
+      }
+      return next;
+    });
   };
 
   const handleTogglePublishQuiz = async (e, quiz) => {
     e.stopPropagation();
     try {
-      await fetch(`/api/quizzes/${quiz.id}`, {
+      const res = await fetch(`/api/quizzes/${quiz.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isPublished: !quiz.isPublished }),
       });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "Failed to update publish status");
+      }
       await fetchQuizzes();
     } catch (err) {
       alert("Failed to update quiz publish status: " + err.message);
@@ -297,14 +230,13 @@ function QuizManager() {
   const handleCreateQuiz = async (event) => {
     event.preventDefault();
     if (!user?.id) return;
-    if (!quizForm.title.trim() || !quizForm.subjectOption) {
-      setQuizError("Title and subject are required");
+    if (!quizForm.title.trim() || !quizForm.subjectId) {
+      setQuizError("Quiz title and subject are required");
       return;
     }
 
-    const selectedSubjectOption = subjectOptions.find((option) => option.value === quizForm.subjectOption);
-    if (!selectedSubjectOption) {
-      setQuizError("Select a subject");
+    if (quizForm.moduleId === "none") {
+      setQuizError("Please select a Learning Module. Every quiz must belong to a learning module.");
       return;
     }
 
@@ -313,30 +245,9 @@ function QuizManager() {
       setQuizError(null);
       setQuizMessage(null);
 
-      let resolvedSubjectId = selectedSubjectOption.isExisting ? selectedSubjectOption.value : null;
-
-      if (!resolvedSubjectId) {
-        const pendingMeta = fallbackSubjectMeta.get(selectedSubjectOption.value) || {
-          name: selectedSubjectOption.label,
-          summary: "",
-        };
-        const createdSubject = await createSubjectRecord({
-          name: pendingMeta.name,
-          class: classLabel,
-          description: pendingMeta.summary,
-          createdBy: user.id,
-        });
-        resolvedSubjectId = createdSubject?.id || createdSubject?.subject?.id;
-        if (!resolvedSubjectId) {
-          throw new Error("Unable to prepare subject for this quiz");
-        }
-        await refreshSubjects();
-        setQuizForm((prev) => ({ ...prev, subjectOption: resolvedSubjectId }));
-      }
-
       const payload = {
-        subjectId: resolvedSubjectId,
-        moduleId: quizForm.moduleId === "none" ? null : quizForm.moduleId,
+        subjectId: quizForm.subjectId,
+        moduleId: quizForm.moduleId,
         title: quizForm.title.trim(),
         description: quizForm.description.trim() || null,
         difficulty: quizForm.difficulty,
@@ -345,8 +256,9 @@ function QuizManager() {
         isBank: quizForm.isBank,
         isPublished: quizForm.isPublished,
       };
+
       const result = await createQuiz(payload);
-      setQuizMessage("Quiz created successfully");
+      setQuizMessage("Quiz created successfully! Now add questions below.");
       setQuizForm(createDefaultQuizForm());
       await fetchQuizzes();
       if (result?.id) {
@@ -357,6 +269,28 @@ function QuizManager() {
     } finally {
       setQuizSubmitting(false);
     }
+  };
+
+  const openResultsModal = async (e, quiz) => {
+    e.stopPropagation();
+    setViewingResultsQuiz(quiz);
+    setResultsLoading(true);
+    setResultsError(null);
+    setResultsList([]);
+    try {
+      const data = await getQuizResults(quiz.id);
+      setResultsList(Array.isArray(data?.results) ? data.results : []);
+    } catch (err) {
+      setResultsError(err?.message || "Failed to load student results");
+    } finally {
+      setResultsLoading(false);
+    }
+  };
+
+  const closeResultsModal = () => {
+    setViewingResultsQuiz(null);
+    setResultsList([]);
+    setResultsError(null);
   };
 
   const handleQuestionOptionChange = (index, value) => {
@@ -419,10 +353,10 @@ function QuizManager() {
 
       if (editingQuestionId) {
         await updateQuestion(editingQuestionId, { ...payload, updatedBy: user.id });
-        setQuestionMessage("Question updated");
+        setQuestionMessage("Question updated successfully");
       } else {
         await addQuestion({ ...payload, createdBy: user.id, quizId: selectedQuizId });
-        setQuestionMessage("Question added");
+        setQuestionMessage("Question added successfully");
       }
 
       resetQuestionForm();
@@ -448,15 +382,19 @@ function QuizManager() {
   }
 
   if (roleLoading) {
-    return <div className="max-w-6xl mx-auto text-slate-600">Loading teacher profile...</div>;
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#635BFF]" />
+      </div>
+    );
   }
 
   if (roleError) {
     return (
-      <Card className="max-w-xl mx-auto bg-white/95 border-slate-200">
-        <CardContent className="p-6 text-center text-slate-700">
-          <div className="text-lg font-semibold mb-2">Unable to load teacher data</div>
-          <div>{roleError}</div>
+      <Card className="max-w-xl mx-auto my-12 bg-white border-slate-200 shadow-sm">
+        <CardContent className="p-6 text-center text-slate-700 space-y-2">
+          <div className="text-lg font-bold text-red-600">Unable to load teacher profile</div>
+          <div className="text-sm text-slate-500">{roleError}</div>
         </CardContent>
       </Card>
     );
@@ -464,465 +402,681 @@ function QuizManager() {
 
   if (!role || !["teacher", "admin"].includes(role)) {
     return (
-      <Card className="max-w-xl mx-auto bg-white/95 border-slate-200">
-        <CardContent className="p-6 text-center text-slate-700">
-          <div className="text-lg font-semibold mb-2">Access Denied</div>
-          <div>You need teacher or admin privileges to manage quizzes.</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!schoolId) {
-    return (
-      <Card className="max-w-xl mx-auto bg-white/95 border-slate-200">
-        <CardContent className="p-6 text-center text-slate-700">
-          <div className="text-lg font-semibold mb-2">School not linked</div>
-          <div>Assign a school to this teacher account to create quizzes.</div>
+      <Card className="max-w-xl mx-auto my-12 bg-white border-slate-200 shadow-sm">
+        <CardContent className="p-6 text-center text-slate-700 space-y-2">
+          <div className="text-lg font-bold text-slate-900">Access Denied</div>
+          <div className="text-sm text-slate-500">You need teacher privileges to create and manage quizzes.</div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/80 py-10">
+    <div className="min-h-screen bg-[#F7F8FC] py-8">
       <div className="max-w-6xl mx-auto space-y-6 px-4 lg:px-0">
-        <div className="text-slate-800 font-semibold text-2xl">Quizzes</div>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-[#172033]">Quizzes</h1>
+            <p className="text-sm text-[#64748B]">
+              Create and manage class-based assessments for school students (Classes 1–12)
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-[#635BFF]/10 text-[#635BFF] border-0 px-3 py-1 text-xs font-semibold">
+              <GraduationCap className="w-3.5 h-3.5 mr-1" /> K-12 School LMS
+            </Badge>
+          </div>
+        </div>
 
-        <Card className="bg-white/95 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-slate-900 text-lg flex items-center gap-2">
-              <PlusCircle className="w-5 h-5 text-violet-600" />
-              Create new quiz
+        {/* Create New Quiz Card */}
+        <Card className="bg-white border-[#E2E8F0] shadow-xs rounded-xl overflow-hidden">
+          <CardHeader className="bg-white border-b border-[#E2E8F0] py-4 px-6">
+            <CardTitle className="text-[#172033] text-base font-bold flex items-center gap-2">
+              <PlusCircle className="w-5 h-5 text-[#635BFF]" />
+              Create New Quiz
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={handleCreateQuiz}>
-              <div className="grid grid-cols-1 gap-4 items-end md:grid-cols-2 xl:grid-cols-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Quiz title</label>
+          <CardContent className="p-6">
+            <form className="space-y-5" onSubmit={handleCreateQuiz}>
+              {/* Row 1: Quiz Title, Class, Subject */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div className="md:col-span-5">
+                  <label className="block text-xs font-semibold text-[#172033] mb-1.5">Quiz Title *</label>
                   <Input
                     value={quizForm.title}
-                    onChange={(event) => handleQuizFieldChange("title", event.target.value)}
-                    placeholder="e.g. Algebra fundamentals"
-                    className="bg-white"
+                    onChange={(e) => handleQuizFieldChange("title", e.target.value)}
+                    placeholder="e.g. Fractions Assessment"
+                    className="bg-white border-[#E2E8F0] focus:border-[#635BFF] rounded-lg"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Branch</label>
-                  <Select value={branchSelection} onValueChange={setBranchSelection}>
-                    <SelectTrigger className={selectTriggerClass}>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent className={selectContentClass}>
-                      {branchOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Semester</label>
-                  <Select value={semesterSelection} onValueChange={setSemesterSelection}>
-                    <SelectTrigger className={selectTriggerClass}>
-                      <SelectValue placeholder="Select semester" />
-                    </SelectTrigger>
-                    <SelectContent className={selectContentClass}>
-                      {semesterOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="md:col-span-2 xl:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
+
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-semibold text-[#172033] mb-1.5">Target Class *</label>
                   <Select
-                    value={quizForm.subjectOption}
-                    onValueChange={(value) => handleQuizFieldChange("subjectOption", value)}
-                    disabled={subjectOptions.length === 0 && !subjectsLoading}
+                    value={quizForm.targetClass}
+                    onValueChange={(val) => handleQuizFieldChange("targetClass", val)}
+                  >
+                    <SelectTrigger className={selectTriggerClass}>
+                      <SelectValue placeholder="Select Class" />
+                    </SelectTrigger>
+                    <SelectContent className={selectContentClass}>
+                      {SCHOOL_CLASSES.map((cls) => (
+                        <SelectItem key={cls} value={cls}>
+                          {cls}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="md:col-span-4">
+                  <label className="block text-xs font-semibold text-[#172033] mb-1.5">Subject *</label>
+                  <Select
+                    value={quizForm.subjectId}
+                    onValueChange={(val) => handleQuizFieldChange("subjectId", val)}
+                    disabled={subjectsLoading}
                   >
                     <SelectTrigger className={selectTriggerClass}>
                       <SelectValue
                         placeholder={
                           subjectsLoading
                             ? "Loading subjects..."
-                            : subjectOptions.length
-                              ? "Select subject"
+                            : (subjects || []).length
+                              ? "Select Subject"
                               : "No subjects available"
                         }
                       />
                     </SelectTrigger>
                     <SelectContent className={selectContentClass}>
-                      {subjectOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                          {!option.isExisting ? <span className="ml-2 text-xs text-slate-500">(new)</span> : null}
+                      {(subjects || []).map((subj) => (
+                        <SelectItem key={subj.id} value={subj.id}>
+                          {subj.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {usingFallbackSubjects && (
-                    <div className="mt-2 text-xs text-slate-500">
-                      Subjects marked as new will be added to your school automatically before the quiz is saved.
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {subjectsError && <div className="text-sm text-red-600">{subjectsError}</div>}
+              {subjectsError && <div className="text-xs text-red-600">{subjectsError}</div>}
 
-              <div className="grid grid-cols-1 gap-4 items-end md:grid-cols-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty</label>
+              {/* Row 2: Learning Module, Difficulty, Time limit */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div className="md:col-span-6">
+                  <label className="block text-xs font-semibold text-[#172033] mb-1.5 flex items-center justify-between">
+                    <span>Learning Module *</span>
+                    <span className="text-[11px] font-normal text-[#64748B]">
+                      Filtered for {quizForm.targetClass}
+                    </span>
+                  </label>
+                  <Select
+                    value={quizForm.moduleId}
+                    onValueChange={(val) => handleQuizFieldChange("moduleId", val)}
+                    disabled={modulesLoading}
+                  >
+                    <SelectTrigger className={selectTriggerClass}>
+                      <SelectValue placeholder="Select Learning Module" />
+                    </SelectTrigger>
+                    <SelectContent className={selectContentClass}>
+                      <SelectItem value="none">-- Select a Learning Module --</SelectItem>
+                      {availableModules.map((mod) => (
+                        <SelectItem key={mod.id} value={mod.id}>
+                          {mod.title} ({mod.class || quizForm.targetClass})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {availableModules.length === 0 && !modulesLoading && (
+                    <p className="mt-1.5 text-xs text-amber-600">
+                      No learning modules found for {quizForm.targetClass}. Create a module in &quot;Modules &amp; Lessons&quot; first.
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-semibold text-[#172033] mb-1.5">Difficulty</label>
                   <Select
                     value={quizForm.difficulty}
-                    onValueChange={(value) => handleQuizFieldChange("difficulty", value)}
+                    onValueChange={(val) => handleQuizFieldChange("difficulty", val)}
                   >
                     <SelectTrigger className={selectTriggerClass}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className={selectContentClass}>
-                      {difficultyOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                      {difficultyOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Time limit (seconds)</label>
+
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-semibold text-[#172033] mb-1.5">Time Limit (seconds)</label>
                   <Input
                     type="number"
                     min={30}
                     step={30}
                     value={quizForm.timeLimit}
-                    onChange={(event) => handleQuizFieldChange("timeLimit", event.target.value)}
-                    className="bg-white"
+                    onChange={(e) => handleQuizFieldChange("timeLimit", e.target.value)}
+                    className="bg-white border-[#E2E8F0] focus:border-[#635BFF] rounded-lg"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Link to Learning Module (Optional)</label>
-                  <Select
-                    value={quizForm.moduleId}
-                    onValueChange={(value) => handleQuizFieldChange("moduleId", value)}
-                  >
-                    <SelectTrigger className={selectTriggerClass}>
-                      <SelectValue placeholder="No module linked" />
-                    </SelectTrigger>
-                    <SelectContent className={selectContentClass}>
-                      <SelectItem value="none">No module linked</SelectItem>
-                      {(teacherModules || []).map((mod) => (
-                        <SelectItem key={mod.id} value={mod.id}>
-                          {mod.title} ({mod.class})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-6 pt-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    id="isBank"
-                    type="checkbox"
-                    checked={quizForm.isBank}
-                    onChange={(event) => handleQuizFieldChange("isBank", event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300"
-                  />
-                  <label htmlFor="isBank" className="text-sm text-slate-700">Mark as question bank</label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    id="isPublished"
-                    type="checkbox"
-                    checked={quizForm.isPublished}
-                    onChange={(event) => handleQuizFieldChange("isPublished", event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <label htmlFor="isPublished" className="text-sm font-medium text-emerald-800">
-                    Release / Publish Quiz to Students
-                  </label>
-                </div>
-              </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-              <Textarea
-                value={quizForm.description}
-                onChange={(event) => handleQuizFieldChange("description", event.target.value)}
-                placeholder="What will students learn from this quiz?"
-                className="bg-white"
-                rows={3}
-              />
-            </div>
-
-            {quizError && <div className="text-sm text-red-600">{quizError}</div>}
-            {quizMessage && <div className="text-sm text-emerald-600">{quizMessage}</div>}
-
-            <Button type="submit" disabled={quizSubmitting} className="bg-violet-600 hover:bg-violet-700">
-              {quizSubmitting ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Creating...
-                </span>
-              ) : (
-                "Create quiz"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-white/95 border-slate-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-slate-900 text-lg">Manage quizzes</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {quizzesError && <div className="text-sm text-red-600">{quizzesError}</div>}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {quizzesLoading && !quizzes.length ? (
-              <div className="py-8 text-center text-slate-500 md:col-span-2">Loading quizzes...</div>
-            ) : quizzes.length ? (
-              quizzes.map((quiz) => (
-                <Card
-                  key={quiz.id}
-                  className={`border ${selectedQuizId === quiz.id ? "border-violet-500" : "border-slate-200"} cursor-pointer hover:border-violet-300 transition-colors`}
-                  onClick={() => setSelectedQuizId(quiz.id)}
-                >
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="font-semibold text-slate-900">{quiz.title}</div>
-                        <div className="text-xs text-slate-500 font-medium">
-                          {subjectsById.get(quiz.subjectId) || "Unknown subject"}
-                          {quiz.moduleId && modulesById.get(quiz.moduleId) ? (
-                            <span className="ml-1 text-violet-600 dark:text-violet-400">
-                              • Module: {modulesById.get(quiz.moduleId)}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <Badge className="bg-violet-100 text-violet-700 border border-violet-200 uppercase text-[10px]">
-                          {quiz.difficulty}
-                        </Badge>
-                        <Badge className={quiz.isPublished ? "bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px]" : "bg-slate-100 text-slate-600 border-slate-200 text-[10px]"}>
-                          {quiz.isPublished ? "🔓 Published" : "🔒 Draft"}
-                        </Badge>
-                      </div>
-                    </div>
-                    {quiz.description && <p className="text-sm text-slate-600">{quiz.description}</p>}
-                    <div className="flex items-center justify-between pt-1 text-xs text-slate-500 border-t border-slate-100">
-                      <span>Updated {new Date(quiz.updatedAt || quiz.createdAt).toLocaleDateString()}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => handleTogglePublishQuiz(e, quiz)}
-                        className="h-7 text-xs font-medium gap-1 text-violet-700 hover:bg-violet-50"
-                      >
-                        {quiz.isPublished ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        {quiz.isPublished ? "Unpublish" : "Release to Students"}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="py-8 text-center text-slate-500 md:col-span-2">
-                No quizzes yet. Create one above to get started.
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-        {selectedQuiz && (
-          <Card className="bg-white/95 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-slate-900 text-lg">Questions for {selectedQuiz.title}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <form className="space-y-4" onSubmit={handleSubmitQuestion}>
+              {/* Row 3: Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Question text</label>
+                <label className="block text-xs font-semibold text-[#172033] mb-1.5">Description (optional)</label>
                 <Textarea
-                  value={questionForm.text}
-                  onChange={(event) => setQuestionForm((prev) => ({ ...prev, text: event.target.value }))}
-                  placeholder="Enter the full question"
-                  className="bg-white"
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {questionForm.options.map((option, index) => (
-                  <div key={index} className="space-y-1">
-                    <label className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="radio"
-                        name="correctOption"
-                        checked={questionForm.correctIndex === index}
-                        onChange={() => setQuestionForm((prev) => ({ ...prev, correctIndex: index }))}
-                        className="h-4 w-4"
-                      />
-                      Option {String.fromCharCode(65 + index)}
-                    </label>
-                    <Input
-                      value={option}
-                      onChange={(event) => handleQuestionOptionChange(index, event.target.value)}
-                      placeholder="Answer option"
-                      className="bg-white"
-                      required={index < 2}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty</label>
-                  <Select
-                    value={questionForm.difficulty}
-                    onValueChange={(value) => setQuestionForm((prev) => ({ ...prev, difficulty: value }))}
-                  >
-                    <SelectTrigger className={selectTriggerClass}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className={selectContentClass}>
-                      {difficultyOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Topic</label>
-                  <Input
-                    value={questionForm.topic}
-                    onChange={(event) => setQuestionForm((prev) => ({ ...prev, topic: event.target.value }))}
-                    placeholder="e.g. Algebra"
-                    className="bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Sub-topic</label>
-                  <Input
-                    value={questionForm.subTopic}
-                    onChange={(event) => setQuestionForm((prev) => ({ ...prev, subTopic: event.target.value }))}
-                    placeholder="e.g. Linear equations"
-                    className="bg-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Explanation (optional)</label>
-                <Textarea
-                  value={questionForm.explanation}
-                  onChange={(event) => setQuestionForm((prev) => ({ ...prev, explanation: event.target.value }))}
-                  placeholder="Explain the correct answer"
-                  className="bg-white"
+                  value={quizForm.description}
+                  onChange={(e) => handleQuizFieldChange("description", e.target.value)}
+                  placeholder="What will students learn from this assessment?"
+                  className="bg-white border-[#E2E8F0] focus:border-[#635BFF] rounded-lg"
                   rows={2}
                 />
               </div>
 
-              {questionError && <div className="text-sm text-red-600">{questionError}</div>}
-              {questionMessage && <div className="text-sm text-emerald-600">{questionMessage}</div>}
+              {/* Checkboxes & Actions */}
+              <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-[#E2E8F0]">
+                <div className="flex items-center gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
+                    <input
+                      id="isPublished"
+                      type="checkbox"
+                      checked={quizForm.isPublished}
+                      onChange={(e) => handleQuizFieldChange("isPublished", e.target.checked)}
+                      className="h-4 w-4 rounded border-[#CBD5E1] text-[#635BFF] focus:ring-[#635BFF]"
+                    />
+                    <span className="font-semibold text-emerald-700">Release / Publish Quiz to Students</span>
+                  </label>
+                </div>
 
-              <div className="flex items-center gap-3">
-                <Button type="submit" disabled={questionSubmitting} className="bg-violet-600 hover:bg-violet-700">
-                  {questionSubmitting ? (
+                <Button
+                  type="submit"
+                  disabled={quizSubmitting}
+                  className="bg-[#635BFF] hover:bg-[#5148E5] text-white font-medium px-6 rounded-lg shadow-xs"
+                >
+                  {quizSubmitting ? (
                     <span className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                      <Loader2 className="w-4 h-4 animate-spin" /> Creating...
                     </span>
-                  ) : editingQuestionId ? (
-                    "Update question"
                   ) : (
-                    "Add question"
+                    "Create Quiz"
                   )}
                 </Button>
-                {editingQuestionId && (
-                  <Button type="button" variant="outline" onClick={resetQuestionForm}>
-                    Cancel edit
-                  </Button>
-                )}
               </div>
+
+              {quizError && <div className="text-xs text-red-600 font-medium">{quizError}</div>}
+              {quizMessage && <div className="text-xs text-emerald-600 font-medium">{quizMessage}</div>}
             </form>
+          </CardContent>
+        </Card>
 
-            <Separator />
+        {/* My Quizzes Management List */}
+        <Card className="bg-white border-[#E2E8F0] shadow-xs rounded-xl overflow-hidden">
+          <CardHeader className="bg-white border-b border-[#E2E8F0] py-4 px-6 flex flex-row items-center justify-between">
+            <CardTitle className="text-[#172033] text-base font-bold">My Quizzes</CardTitle>
+            <Badge variant="outline" className="text-xs text-[#64748B] border-[#E2E8F0]">
+              {quizzes.length} {quizzes.length === 1 ? "Quiz" : "Quizzes"}
+            </Badge>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            {quizzesError && <div className="text-xs text-red-600">{quizzesError}</div>}
 
-            {questionsError && <div className="text-sm text-red-600">{questionsError}</div>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {quizzesLoading && !quizzes.length ? (
+                <div className="py-12 text-center text-slate-400 md:col-span-2">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#635BFF] mb-2" />
+                  Loading your quizzes...
+                </div>
+              ) : quizzes.length ? (
+                quizzes.map((quiz) => {
+                  const mod = quiz.moduleId ? modulesById.get(quiz.moduleId) : null;
+                  const quizClass = quiz.className || mod?.class || "K-12";
+                  const subjectName = quiz.subjectName || subjectsById.get(quiz.subjectId) || "Subject";
+                  const isSelected = selectedQuizId === quiz.id;
 
-            {questionsLoading && !questions.length ? (
-              <div className="py-6 text-center text-slate-500">Loading questions...</div>
-            ) : questions.length ? (
-              <div className="space-y-3">
-                {questions.map((question, index) => (
-                  <Card key={question.id} className="border border-slate-200">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="text-sm text-slate-500">Question {index + 1}</div>
-                          <div className="font-semibold text-slate-900 whitespace-pre-wrap">{question.text}</div>
+                  return (
+                    <div
+                      key={quiz.id}
+                      onClick={() => setSelectedQuizId(quiz.id)}
+                      className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                        isSelected
+                          ? "border-[#635BFF] bg-[#F1EEFF]/30 shadow-xs"
+                          : "border-[#E2E8F0] bg-white hover:border-[#635BFF]/40 shadow-xs"
+                      }`}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-bold text-[#172033] text-base hover:text-[#635BFF] transition-colors">
+                            {quiz.title}
+                          </h3>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Badge
+                              className={`text-[10px] font-semibold uppercase ${
+                                quiz.difficulty === "easy"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : quiz.difficulty === "hard"
+                                    ? "bg-rose-50 text-rose-700 border-rose-200"
+                                    : "bg-amber-50 text-amber-700 border-amber-200"
+                              }`}
+                            >
+                              {quiz.difficulty}
+                            </Badge>
+                            <Badge
+                              className={
+                                quiz.isPublished
+                                  ? "bg-[#ECFDF3] text-[#22C55E] border-[#22C55E]/30 text-[10px] font-semibold"
+                                  : "bg-slate-100 text-[#64748B] border-slate-200 text-[10px] font-semibold"
+                              }
+                            >
+                              {quiz.isPublished ? "🔓 Published" : "🔒 Draft"}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge className="bg-violet-100 text-violet-700 border border-violet-200 uppercase">{question.difficulty}</Badge>
-                          {question.topic && (
-                            <Badge className="bg-slate-100 text-slate-700 border border-slate-200">{question.topic}</Badge>
+
+                        <div className="text-xs font-semibold text-[#64748B] flex items-center gap-2 flex-wrap">
+                          <span className="text-[#635BFF]">{quizClass}</span>
+                          <span>•</span>
+                          <span>{subjectName}</span>
+                          {quiz.moduleId && (
+                            <>
+                              <span>•</span>
+                              <span className="text-slate-700 font-medium">
+                                Module: {quiz.moduleTitle || mod?.title || "Linked"}
+                              </span>
+                            </>
                           )}
-                          {question.subTopic && (
-                            <Badge className="bg-slate-100 text-slate-700 border border-slate-200">{question.subTopic}</Badge>
+                        </div>
+
+                        {quiz.description && (
+                          <p className="text-xs text-[#64748B] line-clamp-2">{quiz.description}</p>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0] text-xs">
+                        <div className="flex items-center gap-1.5 text-[11px] text-[#64748B]">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{quiz.timeLimit ? `${Math.round(quiz.timeLimit / 60)} min` : "Self-paced"}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => openResultsModal(e, quiz)}
+                            className="h-7 px-2 text-xs text-[#635BFF] hover:bg-[#F1EEFF] font-medium"
+                          >
+                            <Award className="w-3.5 h-3.5 mr-1" /> View Results
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => handleTogglePublishQuiz(e, quiz)}
+                            className="h-7 px-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                          >
+                            {quiz.isPublished ? (
+                              <>
+                                <EyeOff className="w-3.5 h-3.5 mr-1" /> Unpublish
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Publish
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="py-12 text-center text-slate-400 md:col-span-2">
+                  No quizzes created yet. Use the form above to create your first class quiz.
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Question Creation & Editor for Selected Quiz */}
+        {selectedQuiz && (
+          <Card className="bg-white border-[#E2E8F0] shadow-xs rounded-xl overflow-hidden">
+            <CardHeader className="bg-white border-b border-[#E2E8F0] py-4 px-6 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-[#172033] text-base font-bold flex items-center gap-2">
+                  <FileQuestion className="w-5 h-5 text-[#635BFF]" />
+                  Questions for: <span className="text-[#635BFF]">{selectedQuiz.title}</span>
+                </CardTitle>
+                <p className="text-xs text-[#64748B] mt-0.5">
+                  Add multiple-choice questions for this quiz assessment
+                </p>
+              </div>
+              <Badge variant="outline" className="text-xs text-[#64748B]">
+                {questions.length} Questions
+              </Badge>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-6">
+              {/* Question Creation Form */}
+              <form className="space-y-4" onSubmit={handleSubmitQuestion}>
+                <div>
+                  <label className="block text-xs font-semibold text-[#172033] mb-1.5">Question Text *</label>
+                  <Textarea
+                    value={questionForm.text}
+                    onChange={(e) => setQuestionForm((prev) => ({ ...prev, text: e.target.value }))}
+                    placeholder="Enter the full question prompt"
+                    className="bg-white border-[#E2E8F0] focus:border-[#635BFF] rounded-lg"
+                    rows={2}
+                    required
+                  />
+                </div>
+
+                {/* 4 Options with radio selector */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {questionForm.options.map((option, index) => (
+                    <div key={index} className="space-y-1">
+                      <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                        <input
+                          type="radio"
+                          name="correctOption"
+                          checked={questionForm.correctIndex === index}
+                          onChange={() => setQuestionForm((prev) => ({ ...prev, correctIndex: index }))}
+                          className="h-3.5 w-3.5 text-[#635BFF] focus:ring-[#635BFF]"
+                        />
+                        <span>Option {String.fromCharCode(65 + index)}</span>
+                        {questionForm.correctIndex === index && (
+                          <span className="text-[11px] text-emerald-600 font-bold">(Correct Answer)</span>
+                        )}
+                      </label>
+                      <Input
+                        value={option}
+                        onChange={(e) => handleQuestionOptionChange(index, e.target.value)}
+                        placeholder={`Option ${String.fromCharCode(65 + index)} text`}
+                        className="bg-white border-[#E2E8F0] focus:border-[#635BFF] rounded-lg"
+                        required={index < 2}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Difficulty, Topic, Sub-topic */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#172033] mb-1.5">Difficulty</label>
+                    <Select
+                      value={questionForm.difficulty}
+                      onValueChange={(val) => setQuestionForm((prev) => ({ ...prev, difficulty: val }))}
+                    >
+                      <SelectTrigger className={selectTriggerClass}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className={selectContentClass}>
+                        {difficultyOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#172033] mb-1.5">Topic (optional)</label>
+                    <Input
+                      value={questionForm.topic}
+                      onChange={(e) => setQuestionForm((prev) => ({ ...prev, topic: e.target.value }))}
+                      placeholder="e.g. Fractions"
+                      className="bg-white border-[#E2E8F0] focus:border-[#635BFF] rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#172033] mb-1.5">Sub-topic (optional)</label>
+                    <Input
+                      value={questionForm.subTopic}
+                      onChange={(e) => setQuestionForm((prev) => ({ ...prev, subTopic: e.target.value }))}
+                      placeholder="e.g. Mixed fractions"
+                      className="bg-white border-[#E2E8F0] focus:border-[#635BFF] rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#172033] mb-1.5">Explanation (optional)</label>
+                  <Textarea
+                    value={questionForm.explanation}
+                    onChange={(e) => setQuestionForm((prev) => ({ ...prev, explanation: e.target.value }))}
+                    placeholder="Explain why the correct answer is right (shown to students upon review)"
+                    className="bg-white border-[#E2E8F0] focus:border-[#635BFF] rounded-lg"
+                    rows={2}
+                  />
+                </div>
+
+                {questionError && <div className="text-xs text-red-600 font-medium">{questionError}</div>}
+                {questionMessage && <div className="text-xs text-emerald-600 font-medium">{questionMessage}</div>}
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="submit"
+                    disabled={questionSubmitting}
+                    className="bg-[#635BFF] hover:bg-[#5148E5] text-white font-medium px-5 rounded-lg shadow-xs"
+                  >
+                    {questionSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                      </span>
+                    ) : editingQuestionId ? (
+                      "Update Question"
+                    ) : (
+                      "Add Question"
+                    )}
+                  </Button>
+                  {editingQuestionId && (
+                    <Button type="button" variant="outline" onClick={resetQuestionForm} className="rounded-lg">
+                      Cancel Edit
+                    </Button>
+                  )}
+                </div>
+              </form>
+
+              <Separator className="bg-[#E2E8F0]" />
+
+              {/* Questions List */}
+              <div className="space-y-3">
+                <div className="text-xs font-bold text-[#172033] uppercase tracking-wider">
+                  Existing Questions ({questions.length})
+                </div>
+
+                {questionsLoading && !questions.length ? (
+                  <div className="py-6 text-center text-slate-400">Loading questions...</div>
+                ) : questions.length ? (
+                  questions.map((question, index) => (
+                    <div
+                      key={question.id}
+                      className="p-4 rounded-xl border border-[#E2E8F0] bg-[#F7F8FC]/50 space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <span className="text-[11px] font-bold text-[#64748B]">Question {index + 1}</span>
+                          <h4 className="text-sm font-semibold text-[#172033] mt-0.5 whitespace-pre-wrap">
+                            {question.text}
+                          </h4>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge className="bg-[#635BFF]/10 text-[#635BFF] border-0 uppercase text-[10px]">
+                            {question.difficulty}
+                          </Badge>
+                          {question.topic && (
+                            <Badge variant="outline" className="text-[10px] text-[#64748B]">
+                              {question.topic}
+                            </Badge>
                           )}
                         </div>
                       </div>
 
-                      <div className="space-y-1 text-sm">
-                        {question.options.map((option, optionIndex) => {
+                      {/* Options Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        {(question.options || []).map((option, optIdx) => {
                           const isCorrect = option === question.correctAnswer;
                           return (
                             <div
-                              key={`${question.id}:${optionIndex}`}
-                              className={`px-3 py-2 rounded-lg border ${isCorrect ? "border-emerald-400 bg-emerald-50" : "border-slate-200"}`}
+                              key={optIdx}
+                              className={`px-3 py-2 rounded-lg border text-xs flex items-center justify-between ${
+                                isCorrect
+                                  ? "border-emerald-300 bg-emerald-50/80 text-emerald-900 font-semibold"
+                                  : "border-[#E2E8F0] bg-white text-slate-700"
+                              }`}
                             >
-                              {option} {isCorrect && <span className="text-emerald-600 font-semibold ml-2">(Correct)</span>}
+                              <span>
+                                <span className="font-bold mr-1.5">{String.fromCharCode(65 + optIdx)}.</span>
+                                {option}
+                              </span>
+                              {isCorrect && (
+                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">
+                                  Correct
+                                </span>
+                              )}
                             </div>
                           );
                         })}
                       </div>
 
-                      <div className="flex items-center justify-between gap-3">
-                        {question.explanation && (
-                          <div className="text-xs text-slate-500 max-w-2xl">Explanation: {question.explanation}</div>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" variant="outline" onClick={() => startEditQuestion(question)}>
-                            <Pencil className="w-4 h-4 mr-1" /> Edit
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleDeleteQuestion(question.id)}>
-                            <Trash2 className="w-4 h-4 mr-1 text-red-600" /> Delete
-                          </Button>
-                        </div>
+                      {question.explanation && (
+                        <p className="text-xs text-[#64748B] italic">Explanation: {question.explanation}</p>
+                      )}
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E2E8F0]">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startEditQuestion(question)}
+                          className="h-7 text-xs border-[#E2E8F0]"
+                        >
+                          <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteQuestion(question.id)}
+                          className="h-7 text-xs text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-8 text-center text-xs text-[#64748B] bg-slate-50 rounded-xl border border-dashed border-[#E2E8F0]">
+                    No questions added yet. Use the form above to add your first question.
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="py-6 text-center text-slate-500">
-                No questions yet. Use the form above to add your first question.
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* View Results Modal */}
+        {viewingResultsQuiz && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+            <Card className="bg-white border-[#E2E8F0] shadow-xl rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              <CardHeader className="p-5 border-b border-[#E2E8F0] flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-bold text-[#172033] flex items-center gap-2">
+                    <Award className="w-5 h-5 text-[#635BFF]" />
+                    Student Results: {viewingResultsQuiz.title}
+                  </CardTitle>
+                  <p className="text-xs text-[#64748B] mt-0.5">
+                    Real submission data for {viewingResultsQuiz.className || "Class"} •{" "}
+                    {viewingResultsQuiz.subjectName || "Subject"}
+                  </p>
+                </div>
+                <button
+                  onClick={closeResultsModal}
+                  className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </CardHeader>
+
+              <CardContent className="p-6 overflow-y-auto space-y-4">
+                {resultsLoading ? (
+                  <div className="py-12 text-center text-[#64748B] flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#635BFF]" />
+                    <span>Loading student results...</span>
+                  </div>
+                ) : resultsError ? (
+                  <div className="p-4 rounded-xl bg-red-50 text-red-700 text-xs border border-red-200">
+                    {resultsError}
+                  </div>
+                ) : resultsList.length === 0 ? (
+                  <div className="py-12 text-center text-xs text-[#64748B] space-y-2">
+                    <Users className="w-8 h-8 mx-auto text-slate-300" />
+                    <p className="font-semibold text-slate-700">No submissions yet</p>
+                    <p>No students have taken this quiz yet.</p>
+                  </div>
+                ) : (
+                  <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-[#F7F8FC] border-b border-[#E2E8F0] text-[#64748B] font-semibold">
+                        <tr>
+                          <th className="py-3 px-4">Student</th>
+                          <th className="py-3 px-4">Class</th>
+                          <th className="py-3 px-4 text-center">Score</th>
+                          <th className="py-3 px-4 text-center">Percentage</th>
+                          <th className="py-3 px-4 text-right">Submitted At</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E2E8F0]">
+                        {resultsList.map((res) => {
+                          const pct =
+                            res.totalQuestions && res.totalQuestions > 0
+                              ? Math.round(((res.correctAnswers || 0) / res.totalQuestions) * 100)
+                              : res.score || 0;
+                          const isPass = pct >= 60;
+
+                          return (
+                            <tr key={res.id} className="hover:bg-slate-50/50">
+                              <td className="py-3 px-4 font-semibold text-[#172033]">{res.studentName}</td>
+                              <td className="py-3 px-4 text-[#64748B]">{res.studentClass}</td>
+                              <td className="py-3 px-4 text-center text-slate-700 font-medium">
+                                {res.correctAnswers !== null && res.totalQuestions !== null
+                                  ? `${res.correctAnswers} / ${res.totalQuestions}`
+                                  : `${res.score}%`}
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span
+                                  className={`inline-flex px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                                    isPass
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : "bg-amber-100 text-amber-800"
+                                  }`}
+                                >
+                                  {pct}%
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right text-[#64748B]">
+                                {res.submittedAt
+                                  ? new Date(res.submittedAt).toLocaleDateString(undefined, {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })
+                                  : "Recently"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>

@@ -164,7 +164,9 @@ class ApiClient {
   async getQuizzes(filters = {}) {
     const params = new URLSearchParams();
     if (filters.subjectId) params.append('subjectId', filters.subjectId);
+    if (filters.moduleId) params.append('moduleId', filters.moduleId);
     if (filters.createdBy) params.append('createdBy', filters.createdBy);
+    if (filters.class) params.append('class', filters.class);
     if (filters.schoolId) params.append('schoolId', filters.schoolId);
     
     const queryString = params.toString();
@@ -174,6 +176,10 @@ class ApiClient {
   async getQuiz(id, includeAnswers = false) {
     const params = includeAnswers ? '?includeAnswers=true' : '';
     return this.request(`/quizzes/${id}${params}`);
+  }
+
+  async getQuizResults(id) {
+    return this.request(`/quizzes/${id}/results`);
   }
 
   async createQuiz(quizData) {
@@ -476,6 +482,7 @@ export const updateSubject = apiClient.updateSubject.bind(apiClient);
 export const deleteSubject = apiClient.deleteSubject.bind(apiClient);
 export const getQuizzes = apiClient.getQuizzes.bind(apiClient);
 export const getQuiz = apiClient.getQuiz.bind(apiClient);
+export const getQuizResults = apiClient.getQuizResults.bind(apiClient);
 export const createQuiz = apiClient.createQuiz.bind(apiClient);
 export const getQuizQuestions = apiClient.getQuizQuestions.bind(apiClient);
 export const createQuestion = apiClient.createQuestion.bind(apiClient);
